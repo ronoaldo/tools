@@ -15,22 +15,28 @@
 # limitations under the License.
 
 # Constants
-eclipse="$HOME/bin/eclipse-indigo-sr1-64bits"
+eclipse="/usr/bin/eclipse"
 program="$( basename $0 )"
 
 # Default features
-FEATURES="com.google.gdt.eclipse.suite.e37.feature.feature.group,\
-com.google.appengine.eclipse.sdkbundle.e37.feature.feature.group,\
-com.google.gwt.eclipse.sdkbundle.e37.feature.feature.group,\
+FEATURES="com.google.gdt.eclipse.suite.e42.feature.feature.group,\
+com.google.appengine.eclipse.sdkbundle.feature.feature.group,\
+com.google.gwt.eclipse.sdkbundle.e42.feature.feature.group,\
 mercurialeclipse.feature.group,\
 org.apache.ivy.feature.feature.group,\
-org.apache.ivyde.feature.feature.group"
+org.apache.ivyde.feature.feature.group,\
+org.maven.ide.eclipse.wtp.feature.feature.group,\
+org.eclipse.m2e.feature.feature.group,\
+org.eclipse.m2e.logback.feature.feature.group,\
+org.sonatype.m2e.mavenarchiver.feature.feature.group"
 
 # Default update-sites
-UPDATE_SITES="http://download.eclipse.org/releases/indigo/,\
-http://dl.google.com/eclipse/plugin/3.7,\
-http://cbes.javaforge.com/update/,\
-http://www.apache.org/dist/ant/ivyde/updatesite/"
+UPDATE_SITES="http://download.eclipse.org/releases/juno/,\
+http://dl.google.com/eclipse/plugin/4.2,\
+http://mercurialeclipse.eclipselabs.org.codespot.com/hg.wiki/update_site/stable,\
+http://www.apache.org/dist/ant/ivyde/updatesite/,\
+http://download.jboss.org/jbosstools/updates/m2eclipse-wtp/,\
+http://download.eclipse.org/technology/m2e/releases/"
 
 # Print help and exit
 usage() {
