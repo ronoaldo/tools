@@ -1,11 +1,76 @@
 #!/bin/bash
 
-set -e
-
-for diretorio in $( ls -d * ) ; do
-	echo "[replicate] executando $* em $diretorio"
-	cd $diretorio
-	$*
-	cd ..
+# Logs a sample message and exists.
+log() {
 	echo
-done
+	echo "[replicate] $*"
+}
+
+# Determines the local directories to enter and run
+# the commands.
+find_dirs() {
+	ls --color=none -1 -d -q */
+}
+
+# Replicate a command on direct chieldren of current
+# directory.
+replicate_cli() {
+	cmd="$*"
+	for d in $( find_dirs ) ; do
+		log "running \"$cmd\" in $d ... "
+		cd $d
+		$cmd || true
+		cd ..
+	done
+}
+
+# Confirms when we detect a potentially dangerous cli
+# Needs improvements
+confirm_cli() {
+	log "You are about to run \"$1\", wich can be dangerous"
+	read -p"[replicate] Are you sure? (y|N) " answer
+	case $answer in
+		[Yy][Ee][Ss]|[Yy]) return 0 ;;
+		*) return 1 ;;
+	esac
+}
+
+# Prints help page and exists
+usage() {
+	cat <<EOF
+Use $0 [--no-fail-fast|--help|-h] cli
+
+Where:
+	--no-fail-fast
+		Avoids calling "set -e". May be dangerous
+		depending of the command you are using
+	--help -h
+		Prints this help and exists
+EOF
+	exit 1
+}
+
+# Parses the first argument, if a special argument is given
+case $1 in
+	--no-fail-fast|--)
+		shift
+		;;
+	--help|-h)
+		usage
+		;;
+	rm|del|rmdir)
+		if ! confirm_cli "$*" ; then
+			exit 1
+		fi
+		;;
+	*)
+		set -e
+		;;
+esac
+
+if [ -z "$*" ] ; then
+	usage
+fi
+
+# Main
+replicate_cli "$*"
