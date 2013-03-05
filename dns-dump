@@ -1,0 +1,17 @@
+#!/bin/bash
+
+dig_query() {
+	domain="$1"
+	dig $domain A \
+		$domain TXT \
+		www.$domain CNAME \
+		$domain MX \
+		mx.$domain MX |\
+	grep -v -e ^';' -e '^$'
+}
+
+if [ -z $1 ] ; then
+	echo "Use $0 naked_domain"
+fi
+
+dig_query "$1"

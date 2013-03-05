@@ -1,0 +1,11 @@
+#!/bin/bash
+
+if [ -z $1 or -z $2 ] ; then
+	echo "Use $0 jar1 jar2 "
+	exit 1
+fi
+
+jar1="$1"
+jar2="$2"
+
+exec vimdiff <( unzip -l "$jar1"  |  awk '{print $4}' | sort ) <( unzip -l "$jar2" | awk '{print $4}' | sort)

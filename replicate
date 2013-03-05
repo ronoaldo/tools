@@ -1,0 +1,11 @@
+#!/bin/bash
+
+set -e
+
+for diretorio in $( ls -d * ) ; do
+	echo "[replicate] executando $* em $diretorio"
+	cd $diretorio
+	$*
+	cd ..
+	echo
+done
