@@ -1,0 +1,49 @@
+" Makefile needs normal tabs
+fu! SetupNormalTabs()
+  set sw=8 ts=8 st=8 noet nosi noai
+endfu
+
+" Tab with 4 spaces
+fu! SetupSpaceTabs()
+  set sw=4 ts=4 st=4 et si ai
+endfu
+
+" Tab with 4 spaces
+fu! Setup2SpaceTabs()
+  set sw=2 ts=2 st=2 et si ai
+endfu
+
+" Configure ~/workspace for Maven projects
+augroup workspace
+  if !exists("s:workspace_init")
+    let s:workspace_init = 1
+    call SetupNormalTabs()
+    autocmd BufNewFile,BufRead */workspace/* cd <afile>:~:s?\~/workspace/\([^/]\+\)/.*?\~/workspace/\1?
+    autocmd BufNewFile,BufRead */workspace/* compiler ant
+    autocmd BufNewFile,BufRead */workspace/* set makeprg=mvn\ -q\ -o\ test-compile\ -f\ ./pom.xml
+    autocmd BufNewFile,BufRead */workspace/* set errorformat=\[ERROR]\ %f:[%l\\,%v]\ %m
+    autocmd BufNewFile,BufRead */workspace/* map! <C-F11> :start mvn -f pom.xml appengine:devserver <CR>
+    autocmd BufNewFile,BufRead */workspace/* map <C-F11> :start mvn -f pom.xml appengine:devserver <CR>
+    autocmd BufNewFile,BufRead */workspace/* map! <C-F5> :make<CR>
+    autocmd BufNewFile,BufRead */workspace/* map <C-F5> :make<CR>
+  endif
+augroup END
+
+" Mapeamentos úteis
+map! <C-s> :w<CR>
+map <C-s> :w<CR>
+
+" Call functions
+au BufRead,BufNewFile *.py call SetupSpaceTabs()
+au BufRead,BufNewFile Makefile call SetupNormalTabs()
+au BufRead,BufNewFile makefile call SetupNormalTabs()
+
+" Syntax
+syntax on
+
+set modeline
+set modelines=5
+set nomousehide
+set nowrap
+set number
+set hlsearch
