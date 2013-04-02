@@ -1,0 +1,39 @@
+#!/bin/bash
+#
+# Copyright 2013 Ronoaldo JLP (http://www.ronoaldo.net/)
+# Special thanks to Filipe Peixoto (http://www.filipenos.com/)
+#
+set -e 
+
+# Utiliza o argumento 1 como nome do plugin
+plugin="$1"
+
+if [ -z "$plugin" ] ; then
+	echo "Use $0 plugin"
+	exit 1
+fi
+
+file="$HOME/.m2/bash_completion"
+
+# TODO: Detectar o goal prefix
+goals="$(mvn help:describe -Dplugin="$plugin" | grep "^$plugin" | tr '\n' ' ')"
+
+# Escreve o arquivo caso não exista, no formato esperado pelo script
+if [ ! -f $file ] ; then
+	echo "Gerando arquivo template em $file ..."
+	cat > $file <<EOF
+__mvncustom_plugins="
+"
+EOF
+fi
+
+# Atualiza os goals
+sed -i $file -e "/^\t$plugin:/d" 
+sed -i $file -e "s;^\";\t$goals\n\";g"
+
+# Informativos ao usuário
+echo "Novos goals adicionados:"
+echo $goals | tr ' ' '\n'
+echo
+echo "Execute source /etc/bash_completion para começar a utilizá-los!"
+source /etc/bash_completion
