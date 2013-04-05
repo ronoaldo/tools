@@ -1,19 +1,46 @@
-" Makefile needs normal tabs
+" ~/.vimrc - Ronoalado JLP
+
+" Creative Commons CC-BY-SA
+
+" ** Funções úteis **
+
+" Tabs normais - \t
 fu! SetupNormalTabs()
-  set sw=8 ts=8 st=8 noet nosi noai
+    set sw=8 ts=8 st=8 noet nosi noai
 endfu
 
-" Tab with 4 spaces
+" Tabs com 4 espaços
 fu! SetupSpaceTabs()
-  set sw=4 ts=4 st=4 et si ai
+    set sw=4 ts=4 st=4 et si ai
 endfu
 
-" Tab with 4 spaces
+" Tabs com 2 espaços
 fu! Setup2SpaceTabs()
-  set sw=2 ts=2 st=2 et si ai
+    set sw=2 ts=2 st=2 et si ai
 endfu
 
-" Configure ~/workspace for Maven projects
+" Mercurial
+fu! HgPull()
+  !hg pull
+endfu
+
+fu! HgPush()
+  !hg push
+endfu
+
+" ** IDE **
+
+" Mapeamento de tipos de arquivo especiais
+au BufRead,BufNewFile *.bsh call setfiletype java
+
+" Mapeamento de tabs por tipos especiais de arquivos
+au BufRead,BufNewFile *.py call SetupSpaceTabs()
+au BufRead,BufNewFile Makefile call SetupNormalTabs()
+au BufRead,BufNewFile makefile call SetupNormalTabs()
+au BufRead,BufNewFile *.xml call SetupNormalTabs()
+au BufRead,BufNewFile *.txt call Setup2SpaceTabs()
+
+" Configura ~/workspace para usar com o Maven
 augroup workspace
   if !exists("s:workspace_init")
     let s:workspace_init = 1
@@ -24,26 +51,41 @@ augroup workspace
     autocmd BufNewFile,BufRead */workspace/* set errorformat=\[ERROR]\ %f:[%l\\,%v]\ %m
     autocmd BufNewFile,BufRead */workspace/* map! <C-F11> :start mvn -f pom.xml appengine:devserver <CR>
     autocmd BufNewFile,BufRead */workspace/* map <C-F11> :start mvn -f pom.xml appengine:devserver <CR>
-    autocmd BufNewFile,BufRead */workspace/* map! <C-F5> :make<CR>
-    autocmd BufNewFile,BufRead */workspace/* map <C-F5> :make<CR>
   endif
 augroup END
 
-" Mapeamentos úteis
-map! <C-s> :w<CR>
-map <C-s> :w<CR>
+" ** Atalhos do Teclado **
 
-" Call functions
-au BufRead,BufNewFile *.py call SetupSpaceTabs()
-au BufRead,BufNewFile Makefile call SetupNormalTabs()
-au BufRead,BufNewFile makefile call SetupNormalTabs()
+" Control F5 para compilar
+noremap  <C-F5> :make<CR>
+vnoremap <C-F5> <C-C>:make<CR>
+inoremap <C-F5> <C-O>:make<CR>
 
-" Syntax
+" Mapeia o CTRL+S para salvar o arquivo
+silent !stty stop '' -ixoff
+noremap  <silent> <C-S>	:update<CR>
+vnoremap <silent> <C-S>	<C-C>:update<CR>
+inoremap <silent> <C-S> <C-O>:update<CR>
+
+" Comandos do Mercurial
+noremap  <silent> <C-P>	:call HgPull()<CR>
+vnoremap <silent> <C-P>	<C-C>:call HgPull()<CR>
+inoremap <silent> <C-P> <C-O>:call HgPull()<CR>
+
+noremap  <silent> <C-U>	:call HgPush()<CR>
+vnoremap <silent> <C-U>	<C-C>:call HgPush()<CR>
+inoremap <silent> <C-U> <C-O>:call HgPush()<CR>
+
+" Comandos c
+
+" ** Opções de configuração gerais **
+
+" Configurações padrão para usar no Vim/GVim
 syntax on
-
 set modeline
 set modelines=5
 set nomousehide
-set nowrap
+set wrap
 set number
 set hlsearch
+set mouse=a
