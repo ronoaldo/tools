@@ -64,7 +64,7 @@ install_build_dependencies() {
 fetch_kernel() {
 	if [ ! -f linux-$KVER.tar.bz2 ] ; then
 		info "Downloading kernel sources ..."
-		wget -c "http://www.kernel.org/pub/linux/kernel/v3.0/linux-$KVER.tar.bz2"
+		wget -c "http://www.kernel.org/pub/linux/kernel/v3.x/linux-$KVER.tar.xz"
 	fi
 }
 
@@ -156,9 +156,8 @@ EOF
 
 ### Main ###
 
-install_build_dependencies
-fetch_kernel
-unpack_kernel
+# Quick help
+case $@ in --help|-h|-?) usage ; exit 1 ;; esac
 
 # Parses the CLI options and configurations.
 while [ $# -gt 0 ] ; do
@@ -166,24 +165,26 @@ while [ $# -gt 0 ] ; do
 		--kernel-version|-k)
 			shift
 			export KVER="$1"
+			info "Setting kernel version to $KVER"
 		;;
 
 		--fast)
-			warn "Building with maximal usage of CPU"
+			warn "Building with maximal usage of CPU!"
 			export BUILD_ARGS="$BUILD_ARGS -j $(grep -c '^processor' /proc/cpuinfo)"
 		;;
 
 		--safe-config)
-			cd linux-$KVER
-			safe_config
-			cd ..
+			info "Will perform safe-config"
+			export SAFE_CONFIG=true
 		;;
 
 		--build-number|-b)
 			shift
+			info "Build number is $1"
 			export BUILD="$1"
 		;;
 		*)
+			echo "Unknown argument '$1'"
 			usage
 			exit 1
 		;;
@@ -191,5 +192,13 @@ while [ $# -gt 0 ] ; do
 	shift
 done
 
+# Configure and build
+install_build_dependencies
+fetch_kernel
+unpack_kernel
+
 cd linux-$KVER
+if [ ! -z $SAFE_CONFIG ] ; then
+	safe_config
+fi
 build_packages
