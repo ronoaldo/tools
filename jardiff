@@ -1,11 +1,37 @@
 #!/bin/bash
+# 
+# Simple utility to check diferences in two JAR files.
+# 
+# Copyrigh (C) 2013 Ronoaldo JLP (http://www.ronoaldo.net)
 
-if [ -z $1 or -z $2 ] ; then
-	echo "Use $0 jar1 jar2 "
+set -e
+
+PROGRAM="$(basename $0)"
+VERSION="1.0"
+AUTHOR="Ronoaldo JLP"
+
+# Print help and exits
+usage() {
+	cat <<EOF
+$PROGRAM $VERSION - Copyright (C) 2013 $AUTHOR
+Displays diferences in two jar/zip files.
+
+Use $PROGRAM jar1 jar2
+
+Examples:
+	jardiff commons-collections-3.2.jar commons-collections-3.2.1.jar
+
+EOF
 	exit 1
+}
+
+# List jar content paths, alphabetically
+ls_jar() {
+	unzip -l "$1"  |  awk '{print $4}' | sort
+}
+
+if [ x"" == x"$1" -o x"" == x"$2" ] ; then
+	usage
 fi
 
-jar1="$1"
-jar2="$2"
-
-exec vimdiff <( unzip -l "$jar1"  |  awk '{print $4}' | sort ) <( unzip -l "$jar2" | awk '{print $4}' | sort)
+exec diff -Naur <( ls_jar $1 ) <( ls_jar $2)
