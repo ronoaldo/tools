@@ -28,6 +28,19 @@ fu! HgPush()
   !hg push
 endfu
 
+" ** Comandos **
+
+" JUnit
+fu Junit()
+  let unit_test = expand('%:t:r')
+	belowright split | enew 
+  echo "Running junit test **" . unit_test . " ..."
+  execute 'r!mvn -o -DskipTests=false -Dtest=**' . unit_test . ' -DfailIfNoTests=false test'
+endfu
+command Junit call Junit()
+" Gwt
+command Gwtc !mvn -o gwt:compile
+
 " ** IDE **
 
 " Mapeamento de tipos de arquivo especiais
@@ -39,6 +52,7 @@ au BufRead,BufNewFile Makefile call SetupNormalTabs()
 au BufRead,BufNewFile makefile call SetupNormalTabs()
 au BufRead,BufNewFile *.xml call SetupNormalTabs()
 au BufRead,BufNewFile *.txt call Setup2SpaceTabs()
+au BufRead,BufNewFile */.vimrc call Setup2SpaceTabs()
 
 " Configura ~/workspace para usar com o Maven
 augroup workspace
@@ -47,19 +61,22 @@ augroup workspace
     call SetupNormalTabs()
     autocmd BufNewFile,BufRead */workspace/* cd <afile>:~:s?\~/workspace/\([^/]\+\)/.*?\~/workspace/\1?
     autocmd BufNewFile,BufRead */workspace/* compiler ant
-    autocmd BufNewFile,BufRead */workspace/* set makeprg=mvn\ -q\ -o\ test-compile\ -f\ ./pom.xml
+    autocmd BufNewFile,BufRead */workspace/* set makeprg=mvn\ -q\ -o\ test-compile\ -f\ ./pom.xml | cw
     autocmd BufNewFile,BufRead */workspace/* set errorformat=\[ERROR]\ %f:[%l\\,%v]\ %m
     autocmd BufNewFile,BufRead */workspace/* map! <C-F11> :start mvn -f pom.xml appengine:devserver <CR>
     autocmd BufNewFile,BufRead */workspace/* map <C-F11> :start mvn -f pom.xml appengine:devserver <CR>
+    autocmd BufNewFile,BufRead */workspace/* noremap  <C-F5> :make<CR>
+    autocmd BufNewFile,BufRead */workspace/* vnoremap <C-F5> <C-C>:make<CR>
+    autocmd BufNewFile,BufRead */workspace/* inoremap <C-F5> <C-O>:make<CR>
   endif
 augroup END
 
-" ** Atalhos do Teclado **
+" Normaliza tamanho para evitar erros
+if has("gui_running")
+  set lines=60 columns=120
+endif
 
-" Control F5 para compilar
-noremap  <C-F5> :make<CR>
-vnoremap <C-F5> <C-C>:make<CR>
-inoremap <C-F5> <C-O>:make<CR>
+" ** Atalhos do Teclado **
 
 " Mapeia o CTRL+S para salvar o arquivo
 silent !stty stop '' -ixoff
@@ -75,8 +92,6 @@ inoremap <silent> <C-P> <C-O>:call HgPull()<CR>
 noremap  <silent> <C-U>	:call HgPush()<CR>
 vnoremap <silent> <C-U>	<C-C>:call HgPush()<CR>
 inoremap <silent> <C-U> <C-O>:call HgPush()<CR>
-
-" Comandos c
 
 " ** Opções de configuração gerais **
 
