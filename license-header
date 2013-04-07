@@ -1,5 +1,8 @@
 #!/bin/bash
-# Copyright 2013 Ronoaldo JLP (http://www.ronoaldo.net)
+
+set -e
+
+LICENSE="# Copyright $(date +%Y) Ronoaldo JLP (http://www.ronoaldo.net)
 # 
 #   Licensed under the Apache License, Version 2.0 (the 'License');
 #   you may not use this file except in compliance with the License.
@@ -12,20 +15,30 @@
 #   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
+"
 
-
-dig_query() {
-	domain="$1"
-	dig $domain A \
-		$domain TXT \
-		www.$domain CNAME \
-		$domain MX \
-		mx.$domain MX |\
-	grep -v -e ^';' -e '^$'
+has_license() {
+	if grep -qi "licensed under the apache license" $1 ; then
+		return 0
+	else 
+		return 1
+	fi
 }
 
-if [ -z $1 ] ; then
-	echo "Use $0 naked_domain"
-fi
+apply_license() {
+	shebang="$(head -n 1 $1)"
+	echo "$shebang" > $1.new
+	echo "$LICENSE" >>  $1.new
+	grep -v "$shebang" $1 >> $1.new
+	chmod --reference=$1 $1.new
+	echo License $2 applied to $1.new
+}
 
-dig_query "$1"
+for file in $@ ; do
+	if ! has_license $file ; then
+		echo "Appliyng license to $file ... "
+		apply_license $file
+	else
+		echo "$file has license"
+	fi
+done
