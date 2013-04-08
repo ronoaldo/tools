@@ -6,7 +6,7 @@
 
 " Tabs normais - \t
 fu! SetupNormalTabs()
-    set sw=8 ts=8 st=8 noet nosi noai
+    set sw=8 ts=8 st=8 noet si ai
 endfu
 
 " Tabs com 4 espaços
@@ -38,8 +38,15 @@ fu Junit()
   execute 'r!mvn -o -DskipTests=false -Dtest=**' . unit_test . ' -DfailIfNoTests=false test'
 endfu
 command Junit call Junit()
+
 " Gwt
 command Gwtc !mvn -o gwt:compile
+
+" Review your changes
+fu Review()
+  belowright split | enew | execute 'r!hg diff --git' | setfiletype diff
+endfu
+command Review call Review()
 
 " ** IDE **
 
@@ -70,11 +77,6 @@ augroup workspace
     autocmd BufNewFile,BufRead */workspace/* inoremap <C-F5> <C-O>:make<CR>
   endif
 augroup END
-
-" Normaliza tamanho para evitar erros
-if has("gui_running")
-  set lines=60 columns=120
-endif
 
 " ** Atalhos do Teclado **
 
