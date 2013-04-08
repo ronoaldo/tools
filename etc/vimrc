@@ -48,6 +48,13 @@ fu Review()
 endfu
 command Review call Review()
 
+" Ctags
+fu IndexWorkspace()
+  echo "Indexing .tags file ..."
+  !rm -vf ~/workspace/.tags && find ~/workspace/ -type f -iname '*.java' | xargs ctags -a -f ~/workspace/.tags  -L - --totals
+endfu
+command IndexWorkspace call IndexWorkspace()
+
 " ** IDE **
 
 " Mapeamento de tipos de arquivo especiais
@@ -65,7 +72,8 @@ au BufRead,BufNewFile */.vimrc call Setup2SpaceTabs()
 augroup workspace
   if !exists("s:workspace_init")
     let s:workspace_init = 1
-    call SetupNormalTabs()
+    autocmd BufNewFile,BufRead */workspace/* call SetupNormalTabs()
+    autocmd BufNewFile,BufRead */workspace/* set tags=~/workspace/.tags
     autocmd BufNewFile,BufRead */workspace/* cd <afile>:~:s?\~/workspace/\([^/]\+\)/.*?\~/workspace/\1?
     autocmd BufNewFile,BufRead */workspace/* compiler ant
     autocmd BufNewFile,BufRead */workspace/* set makeprg=mvn\ -q\ -o\ test-compile\ -f\ ./pom.xml | cw
