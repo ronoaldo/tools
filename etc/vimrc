@@ -55,12 +55,21 @@ fu IndexWorkspace()
 endfu
 command IndexWorkspace call IndexWorkspace()
 
-" Code Snippets
-fu InstallSnippets()
-  echo "Baixando e instalando Code Snippets"
-  !cd /tmp && wget https://github.com/csexton/snipmate.vim/archive/master.zip && unzip master.zip && mkdir -p ~/.vim && mv snipmate.vim-master/* ~/.vim
+" ** Plugins úteis **
+
+" snipmate.vim
+fu InstallSnipmate()
+  echo "Instalando snipmate.vim ..."
+  !cd /tmp && wget 'https://github.com/csexton/snipmate.vim/archive/master.zip' -O /tmp/snipmate.zip && unzip snipmate.zip && mkdir -p ~/.vim && mv snipmate.vim-master/* ~/.vim
 endfu
-command InstallSnippets call InstallSnippets()
+command InstallSnipmate call InstallSnipmate()
+
+" jcomplete.vim
+fu InstallJComplete()
+  echo "Instalando jcomplete.vim ..."
+  !wget 'http://www.vim.org/scripts/download_script.php?src_id=14914' -O /tmp/jcomplete.zip && mkdir -p ~/.vim && cd ~/.vim && unzip /tmp/jcomplete.zip
+endfu
+command InstallJComplete call InstallJComplete()
 
 " ** IDE **
 
@@ -74,6 +83,9 @@ au BufRead,BufNewFile makefile call SetupNormalTabs()
 au BufRead,BufNewFile *.xml call SetupNormalTabs()
 au BufRead,BufNewFile *.txt call Setup2SpaceTabs()
 au BufRead,BufNewFile */.vimrc call Setup2SpaceTabs()
+au BufRead,BufNewFile *.java compiler javac
+au BufRead,BufNewFile *.java set makeprg=javac\ %
+au BufRead,BufNewFile *.java set omnifunc=javacomplete#Complete
 
 " Configura ~/workspace para usar com o Maven
 augroup workspace
