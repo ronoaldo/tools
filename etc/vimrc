@@ -55,6 +55,13 @@ fu IndexWorkspace()
 endfu
 command IndexWorkspace call IndexWorkspace()
 
+" Code Snippets
+fu InstallSnippets()
+  echo "Baixando e instalando Code Snippets"
+  !cd /tmp && wget https://github.com/csexton/snipmate.vim/archive/master.zip && unzip master.zip && mkdir -p ~/.vim && mv snipmate.vim-master/* ~/.vim
+endfu
+command InstallSnippets call InstallSnippets()
+
 " ** IDE **
 
 " Mapeamento de tipos de arquivo especiais
