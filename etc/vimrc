@@ -1,10 +1,16 @@
-" ~/.vimrc - Ronoalado JLP
+" ~/.vimrc
+" Copyright (2013) Ronoalado JLP (http://www.ronoaldo.net)
+" 
+" Contribuições:
+"   Filipe Peixoto (http://www.filipenos.net)
+" Licença:
+"   Creative Commons CC-BY-SA
 
-" Creative Commons CC-BY-SA
+" ********** Funções úteis **********
 
-" ** Funções úteis **
+" Configurações de tabulação
 
-" Tabs normais - \t
+" Tabs Normais
 fu! SetupNormalTabs()
     set sw=8 ts=8 st=8 noet si ai
 endfu
@@ -28,50 +34,77 @@ fu! HgPush()
   !hg push
 endfu
 
-" ** Comandos **
+fu HgDiff()
+  belowright split | enew | execute 'r!hg diff --git' | setfiletype diff
+endfu
 
 " JUnit
-fu Junit()
+fu RunJunitForCurrentFile()
   let unit_test = expand('%:t:r')
 	belowright split | enew 
   echo "Running junit test **" . unit_test . " ..."
   execute 'r!mvn -o -DskipTests=false -Dtest=**' . unit_test . ' -DfailIfNoTests=false test'
 endfu
-command Junit call Junit()
-
-" Gwt
-command Gwtc !mvn -o gwt:compile
-
-" Review your changes
-fu Review()
-  belowright split | enew | execute 'r!hg diff --git' | setfiletype diff
-endfu
-command Review call Review()
 
 " Ctags
-fu IndexWorkspace()
+fu RunCTagsInWorkspace()
   echo "Indexing .tags file ..."
   !rm -vf ~/workspace/.tags && find ~/workspace/ -type f -iname '*.java' | xargs ctags -a -f ~/workspace/.tags  -L - --totals
+  set tags=~/workspace/.tags
 endfu
-command IndexWorkspace call IndexWorkspace()
 
-" ** Plugins úteis **
+" full lazyness - atalhos para digitar menos
+command Review call HgDiff()
+command Junit call RunJunitForCurrentFile()
+command Gwtc !mvn -o gwt:compile
+command IndexWorkspace call RunCTagsInWorkspace()
 
-" snipmate.vim
+" ********** Gestão de Plugins **********
+
+" pathogen.vim - Gerencia bundles automaticamente
+fu InstallPathogen()
+  echo "Instalando pathogen.vim ..."
+  silent !if [ \! -f ~/.vim/autoload/pathogen.vim ] ; then mkdir -p ~/.vim/{autoload,bundle} ; wget 'http://www.vim.org/scripts/download_script.php?src_id=19375' -O ~/.vim/autoload/pathogen.vim ; fi
+endfu
+
+" snipmate.vim - Code templates
 fu InstallSnipmate()
+  call InstallPathogen()
   echo "Instalando snipmate.vim ..."
-  !cd /tmp && wget 'https://github.com/csexton/snipmate.vim/archive/master.zip' -O /tmp/snipmate.zip && unzip snipmate.zip && mkdir -p ~/.vim && mv snipmate.vim-master/* ~/.vim
+  silent !wget -c 'https://github.com/csexton/snipmate.vim/archive/master.zip' -O /tmp/snipmate.zip && unzip /tmp/snipmate.zip -d $HOME/.vim/bundle
 endfu
-command InstallSnipmate call InstallSnipmate()
 
-" jcomplete.vim
+" jcomplete.vim - Autocomplete para a JDK
 fu InstallJComplete()
+  call InstallPathogen()
   echo "Instalando jcomplete.vim ..."
-  !wget 'http://www.vim.org/scripts/download_script.php?src_id=14914' -O /tmp/jcomplete.zip && mkdir -p ~/.vim && cd ~/.vim && unzip /tmp/jcomplete.zip
+  silent !wget -c 'http://www.vim.org/scripts/download_script.php?src_id=14914' -O /tmp/jcomplete.zip && unzip /tmp/jcomplete.zip -d $HOME/.vim/bundle/jcomplete
 endfu
-command InstallJComplete call InstallJComplete()
 
-" ** IDE **
+" taglist.vim - Outline do código
+fu InstallTagList()
+  call InstallPathogen()
+  echo "Instalando taglist.vim ..."
+  silent !wget -c 'http://www.vim.org/scripts/download_script.php?src_id=19574' -O /tmp/taglist.zip && unzip /tmp/taglist.zip -d $HOME/.vim/bundle/taglist
+endfu
+
+" Setup para instalar todos os plugins por padrão
+fu InstallAllPlugins()
+  call InstallSnipmate()
+  call InstallJComplete()
+  call InstallTagList()
+endfu
+
+" ********** Workspace de Trabalho **********
+
+" Carrega o pathogen
+silent call pathogen#infect()
+
+" Alias para o comando ficar mais fácil de lembrar
+command Outline TlistToggle
+
+" Tabulação padrão com \t
+call SetupNormalTabs()
 
 " Mapeamento de tipos de arquivo especiais
 au BufRead,BufNewFile *.bsh call setfiletype java
@@ -105,7 +138,7 @@ augroup workspace
   endif
 augroup END
 
-" ** Atalhos do Teclado **
+" ********** Atalhos do Teclado **********
 
 " Mapeia o CTRL+S para salvar o arquivo
 silent !stty stop '' -ixoff
@@ -127,7 +160,7 @@ imap { {}<left>
 imap ( ()<left>
 imap [ []<left>
 
-" ** Opções de configuração gerais **
+" ********** Opções de genéricas **********
 
 " Configurações padrão para usar no Vim/GVim
 syntax on
