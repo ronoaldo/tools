@@ -61,31 +61,46 @@ command IndexWorkspace call RunCTagsInWorkspace()
 
 " ********** Gestão de Plugins **********
 
-" pathogen.vim - Gerencia bundles automaticamente
+" pathogen.vim - Gerencia bundles para simplificar a manutenção de plugins
 fu InstallPathogen()
   echo "Instalando pathogen.vim ..."
-  silent !if [ \! -f ~/.vim/autoload/pathogen.vim ] ; then mkdir -p ~/.vim/{autoload,bundle} ; wget 'http://www.vim.org/scripts/download_script.php?src_id=19375' -O ~/.vim/autoload/pathogen.vim ; fi
+  let wget="wget 'http://www.vim.org/scripts/download_script.php?src_id=19375' -O ~/.vim/autoload/pathogen.vim "
+  let mkdirs="mkdir -p ~/.vim/{autoload,bundle}"
+  execute "! if [ \! -f ~/.vim/autoload/pathogen.vim ] ; then " . mkdirs . " ; " . wget . " ; fi"
+endfu
+
+" Função auxiliar para instalar o plugin do vim com base em seu nome e id de download
+fu InstallVimPlugin(name, downloadid)
+  call InstallPathogen()
+  echo "Instalando plugind id " . a:name . ", r=" . a:downloadid
+  
+  let url="http://www.vim.org/scripts/download_script.php?src_id=" . a:downloadid
+  let wget="wget -c '" . url . "' -O /tmp/" . a:downloadid . ".zip"
+  let unzip="unzip /tmp/" . a:downloadid . ".zip -d ~/.vim/bundle/" . a:name
+  
+  execute "! if [ \! -d ~/.vimrc/bundle/" . a:name . " ] ; then "  . wget . " && " . unzip
 endfu
 
 " snipmate.vim - Code templates
 fu InstallSnipmate()
   call InstallPathogen()
-  echo "Instalando snipmate.vim ..."
-  silent !wget -c 'https://github.com/csexton/snipmate.vim/archive/master.zip' -O /tmp/snipmate.zip && unzip /tmp/snipmate.zip -d $HOME/.vim/bundle
-endfu
+  let wget="wget -c 'https://github.com/csexton/snipmate.vim/archive/master.zip' -O /tmp/snipmate.zip"
+  let unzip="unzip /tmp/snipmate.zip -d $HOME/.vim/bundle"
+  execute "! if [ \! -d ~/.vimrc/bundle/snipmate.vim-master ] ; then " . wget . " ; " . unzip
+endfu 
 
 " jcomplete.vim - Autocomplete para a JDK
 fu InstallJComplete()
-  call InstallPathogen()
-  echo "Instalando jcomplete.vim ..."
-  silent !wget -c 'http://www.vim.org/scripts/download_script.php?src_id=14914' -O /tmp/jcomplete.zip && unzip /tmp/jcomplete.zip -d $HOME/.vim/bundle/jcomplete
+  call InstallVimPlugin("jcomplete", "14914")
 endfu
 
 " taglist.vim - Outline do código
 fu InstallTagList()
-  call InstallPathogen()
-  echo "Instalando taglist.vim ..."
-  silent !wget -c 'http://www.vim.org/scripts/download_script.php?src_id=19574' -O /tmp/taglist.zip && unzip /tmp/taglist.zip -d $HOME/.vim/bundle/taglist
+  call InstallVimPlugin("taglist", "19574")
+endfu
+
+fu InstallNerdTree()
+  call InstallVimPlugin("nerdtree", "17123")
 endfu
 
 " Setup para instalar todos os plugins por padrão
@@ -93,6 +108,7 @@ fu InstallAllPlugins()
   call InstallSnipmate()
   call InstallJComplete()
   call InstallTagList()
+  call InstallNerdTree()
 endfu
 
 " ********** Workspace de Trabalho **********
@@ -115,7 +131,8 @@ au BufRead,BufNewFile Makefile call SetupNormalTabs()
 au BufRead,BufNewFile makefile call SetupNormalTabs()
 au BufRead,BufNewFile *.xml call SetupNormalTabs()
 au BufRead,BufNewFile *.txt call Setup2SpaceTabs()
-au BufRead,BufNewFile */.vimrc call Setup2SpaceTabs()
+au BufRead,BufNewFile *.vimrc call Setup2SpaceTabs()
+au BufRead,BufNewFile vimrc call Setup2SpaceTabs()
 au BufRead,BufNewFile *.java compiler javac
 au BufRead,BufNewFile *.java set makeprg=javac\ %
 au BufRead,BufNewFile *.java set omnifunc=javacomplete#Complete
