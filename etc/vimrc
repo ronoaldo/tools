@@ -34,43 +34,44 @@ fu! HgPush()
   !hg push
 endfu
 
-fu HgDiff()
+fu! HgDiff()
   belowright split | enew | execute 'r!hg diff --git' | setfiletype diff
 endfu
 
-" JUnit
-fu RunJunitForCurrentFile()
+" Maven JUnit
+fu! RunJunitForCurrentFile()
   let unit_test = expand('%:t:r')
 	belowright split | enew 
   echo "Running junit test **" . unit_test . " ..."
   execute 'r!mvn -o -DskipTests=false -Dtest=**' . unit_test . ' -DfailIfNoTests=false test'
 endfu
 
-" Ctags
-fu RunCTagsInWorkspace()
+" Exuberant Ctags
+fu! RunCTagsInWorkspace()
   echo "Indexing .tags file ..."
   !rm -vf ~/workspace/.tags && find ~/workspace/ -type f -iname '*.java' | xargs ctags -a -f ~/workspace/.tags  -L - --totals
   set tags=~/workspace/.tags
 endfu
 
-" full lazyness - atalhos para digitar menos
-command Review call HgDiff()
-command Junit call RunJunitForCurrentFile()
-command Gwtc !mvn -o gwt:compile
-command IndexWorkspace call RunCTagsInWorkspace()
+" Mapeamento de atalhos conveniente
+fu! KeyMap(key, action)
+  execute "noremap  <silent> " . a:key . " " . a:action . "<CR>"
+  execute "vnoremap <silent> " . a:key . " <C-C>" . a:action . "<CR>"
+  execute "inoremap <silent> " . a:key . " <C-O>" . a:action . "<CR>"
+endfu
 
 " ********** Gestão de Plugins **********
 
 " pathogen.vim - Gerencia bundles para simplificar a manutenção de plugins
-fu InstallPathogen()
+fu! InstallPathogen()
   echo "Instalando pathogen.vim ..."
   let wget="wget 'http://www.vim.org/scripts/download_script.php?src_id=19375' -O ~/.vim/autoload/pathogen.vim "
   let mkdirs="mkdir -p ~/.vim/{autoload,bundle}"
-  execute "! if [ \! -f ~/.vim/autoload/pathogen.vim ] ; then " . mkdirs . " ; " . wget . " ; fi"
+  execute "silent ! if [ \\! -f ~/.vim/autoload/pathogen.vim ] ; then " . mkdirs . " ; " . wget . " ; fi"
 endfu
 
 " Função auxiliar para instalar o plugin do vim com base em seu nome e id de download
-fu InstallVimPlugin(name, downloadid)
+fu! InstallVimPlugin(name, downloadid)
   call InstallPathogen()
   echo "Instalando plugind id " . a:name . ", r=" . a:downloadid
   
@@ -78,46 +79,51 @@ fu InstallVimPlugin(name, downloadid)
   let wget="wget -c '" . url . "' -O /tmp/" . a:downloadid . ".zip"
   let unzip="unzip /tmp/" . a:downloadid . ".zip -d ~/.vim/bundle/" . a:name
   
-  execute "! if [ \! -d ~/.vimrc/bundle/" . a:name . " ] ; then "  . wget . " && " . unzip
+  execute "silent ! if [ \\! -d ~/.vim/bundle/" . a:name . " ] ; then "  . wget . " && " . unzip . " ; fi"
 endfu
 
 " snipmate.vim - Code templates
-fu InstallSnipmate()
+fu! InstallSnipmate()
   call InstallPathogen()
   let wget="wget -c 'https://github.com/csexton/snipmate.vim/archive/master.zip' -O /tmp/snipmate.zip"
   let unzip="unzip /tmp/snipmate.zip -d $HOME/.vim/bundle"
-  execute "! if [ \! -d ~/.vimrc/bundle/snipmate.vim-master ] ; then " . wget . " ; " . unzip
+  execute "silent ! if [ \\! -d ~/.vim/bundle/snipmate.vim-master ] ; then " . wget . " ; " . unzip . " ; fi"
 endfu 
 
 " jcomplete.vim - Autocomplete para a JDK
-fu InstallJComplete()
+fu! InstallJComplete()
   call InstallVimPlugin("jcomplete", "14914")
 endfu
 
 " taglist.vim - Outline do código
-fu InstallTagList()
+fu! InstallTagList()
   call InstallVimPlugin("taglist", "19574")
 endfu
 
-fu InstallNerdTree()
+" nerdtree.vim - Filebrowser
+fu! InstallNerdTree()
   call InstallVimPlugin("nerdtree", "17123")
 endfu
 
 " Setup para instalar todos os plugins por padrão
-fu InstallAllPlugins()
+fu! InstallAllPlugins()
   call InstallSnipmate()
   call InstallJComplete()
   call InstallTagList()
   call InstallNerdTree()
 endfu
 
+" lazyness - atalhos para digitar menos
+command Review call HgDiff()
+command Junit call RunJunitForCurrentFile()
+command Gwtc !mvn -o gwt:compile
+command IndexWorkspace call RunCTagsInWorkspace()
+command Outline TlistToggle
+
 " ********** Workspace de Trabalho **********
 
-" Carrega o pathogen
+" Carrega o pathogen, silenciosamente.
 silent call pathogen#infect()
-
-" Alias para o comando ficar mais fácil de lembrar
-command Outline TlistToggle
 
 " Tabulação padrão com \t
 call SetupNormalTabs()
@@ -147,11 +153,8 @@ augroup workspace
     autocmd BufNewFile,BufRead */workspace/* compiler ant
     autocmd BufNewFile,BufRead */workspace/* set makeprg=mvn\ -q\ -o\ test-compile\ -f\ ./pom.xml | cw
     autocmd BufNewFile,BufRead */workspace/* set errorformat=\[ERROR]\ %f:[%l\\,%v]\ %m
-    autocmd BufNewFile,BufRead */workspace/* map! <C-F11> :start mvn -f pom.xml appengine:devserver <CR>
-    autocmd BufNewFile,BufRead */workspace/* map <C-F11> :start mvn -f pom.xml appengine:devserver <CR>
-    autocmd BufNewFile,BufRead */workspace/* noremap  <C-F5> :make<CR>
-    autocmd BufNewFile,BufRead */workspace/* vnoremap <C-F5> <C-C>:make<CR>
-    autocmd BufNewFile,BufRead */workspace/* inoremap <C-F5> <C-O>:make<CR>
+    autocmd BufNewFile,BufRead */workspace/* call KeyMap("<C-F11>", ":start mvn -f pom.xml appengine:devserver")
+    autocmd BufNewFile,BufRead */workspace/* call KeyMap("<C-F5>",  ":make")
   endif
 augroup END
 
@@ -159,18 +162,9 @@ augroup END
 
 " Mapeia o CTRL+S para salvar o arquivo
 silent !stty stop '' -ixoff
-noremap  <silent> <C-S>	:update<CR>
-vnoremap <silent> <C-S>	<C-C>:update<CR>
-inoremap <silent> <C-S> <C-O>:update<CR>
-
-" Comandos do Mercurial
-noremap  <silent> <C-P>	:call HgPull()<CR>
-vnoremap <silent> <C-P>	<C-C>:call HgPull()<CR>
-inoremap <silent> <C-P> <C-O>:call HgPull()<CR>
-
-noremap  <silent> <C-U>	:call HgPush()<CR>
-vnoremap <silent> <C-U>	<C-C>:call HgPush()<CR>
-inoremap <silent> <C-U> <C-O>:call HgPush()<CR>
+call KeyMap('<C-S>', ':update')
+call KeyMap("<C-P", ":call HgPull()")
+call KeyMap("<C-U", ":call HgPush()")
 
 " Configura o fechamento automatico
 imap { {}<left>
