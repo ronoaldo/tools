@@ -122,6 +122,11 @@ noremap  <silent> <C-U>	:call HgPush()<CR>
 vnoremap <silent> <C-U>	<C-C>:call HgPush()<CR>
 inoremap <silent> <C-U> <C-O>:call HgPush()<CR>
 
+" Configura o fechamento automatico
+imap { {}<left>
+imap ( ()<left>
+imap [ []<left>
+
 " ** Opções de configuração gerais **
 
 " Configurações padrão para usar no Vim/GVim
