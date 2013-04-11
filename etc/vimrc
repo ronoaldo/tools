@@ -119,6 +119,7 @@ command Junit call RunJunitForCurrentFile()
 command Gwtc !mvn -o gwt:compile
 command IndexWorkspace call RunCTagsInWorkspace()
 command Outline TlistToggle
+command MakeAndFix make! | cw
 
 " ********** Workspace de Trabalho **********
 
@@ -149,7 +150,7 @@ augroup workspace
     let s:workspace_init = 1
     autocmd BufNewFile,BufRead */workspace/* cd <afile>:~:s?\~/workspace/\([^/]\+\)/.*?\~/workspace/\1?
     autocmd BufNewFile,BufRead */workspace/* compiler ant
-    autocmd BufNewFile,BufRead */workspace/* set makeprg=mvn\ -q\ -o\ test-compile\ -f\ ./pom.xml | cw
+    autocmd BufNewFile,BufRead */workspace/* set makeprg=mvn\ -q\ -o\ test-compile\ -f\ ./pom.xml
     autocmd BufNewFile,BufRead */workspace/* set errorformat=\[ERROR]\ %f:[%l\\,%v]\ %m
     autocmd BufNewFile,BufRead */workspace/* call KeyMap("<C-F11>", ":start mvn -f pom.xml appengine:devserver")
     " Configura o taglist como Overview
@@ -164,7 +165,7 @@ augroup END
 call KeyMap('<C-S>', ':update')
 call KeyMap("<C-P>", ":call HgPull()")
 call KeyMap("<C-U>", ":call HgPush()")
-call KeyMap("<C-F8>", ":make")
+call KeyMap("<C-F8>", ":MakeAndFix")
 call KeyMap("<C-F12>", ":NERDTreeToggle<CR>:TlistToggle")
 
 " Configura o fechamento automatico
