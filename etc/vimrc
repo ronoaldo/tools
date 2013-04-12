@@ -71,6 +71,13 @@ fu! KeyMap(key, action)
   execute "inoremap <silent> " . a:key . " <C-O>" . a:action . "<CR>"
 endfu
 
+" Inicia o java debugger
+fu! StartJdb(port)
+  let jdb = "!jdb -sourcepath " . $PWD . "/src/main/java:" . $PWD . "/src/test/java"
+  let jdb = jdb . " -port " . a:port
+  execute jdb
+endfu
+
 " ********** Gestão de Plugins **********
 
 " pathogen.vim - Gerencia bundles para simplificar a manutenção de plugins
@@ -82,14 +89,20 @@ fu! InstallPathogen()
 endfu
 
 " Função auxiliar para instalar o plugin do vim com base em seu nome e id de download
-fu! InstallVimPlugin(name, downloadid)
+fu! InstallVimPlugin(name, downloadid, type)
   call InstallPathogen()
   echo "Instalando plugind id " . a:name . ", r=" . a:downloadid
   
   let url="http://www.vim.org/scripts/download_script.php?src_id=" . a:downloadid
   let wget="wget -c '" . url . "' -O /tmp/" . a:downloadid . ".zip"
-  let unzip="unzip /tmp/" . a:downloadid . ".zip -d ~/.vim/bundle/" . a:name
   
+  if a:type == "zip"
+    let unzip="unzip /tmp/" . a:downloadid . ".zip -d ~/.vim/bundle/" . a:name
+  else
+    let unzip="mkdir -p ~/.vim/bundle/" . a:name . " ;"
+    let unzip= unzip . "tar xf /tmp/" . a:downloadid . ".zip -C ~/.vim/bundle/" . a:name
+  endif
+
   execute "silent ! if [ \\! -d ~/.vim/bundle/" . a:name . " ] ; then "  . wget . " && " . unzip . " ; fi"
 endfu
 
@@ -103,17 +116,22 @@ endfu
 
 " jcomplete.vim - Autocomplete para a JDK
 fu! InstallJComplete()
-  call InstallVimPlugin("jcomplete", "14914")
+  call InstallVimPlugin("jcomplete", "14914", "zip")
 endfu
 
 " taglist.vim - Outline do código
 fu! InstallTagList()
-  call InstallVimPlugin("taglist", "19574")
+  call InstallVimPlugin("taglist", "19574", "zip")
 endfu
 
 " nerdtree.vim - Filebrowser
 fu! InstallNerdTree()
-  call InstallVimPlugin("nerdtree", "17123")
+  call InstallVimPlugin("nerdtree", "17123", "zip")
+endfu
+
+" yavdb.vim - Debugger (gdb, jdb)
+fu! InstallYavdb()
+  call InstallVimPlugin("yavdb", "7349", "tgz")
 endfu
 
 " Setup para instalar todos os plugins por padrão
