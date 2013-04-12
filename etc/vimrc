@@ -35,12 +35,23 @@ fu! HgPush()
 endfu
 
 fu! HgDiff()
-  belowright split | enew | execute 'r!hg diff --git' | setfiletype diff
+  belowright split
+  enew
+  setlocal buftype=nofile
+  setlocal bufhidden=hide
+  setlocal noswapfile
+  setfiletype diff
+  execute 'r!hg diff --git'
+  0
 endfu
 
 " Maven JUnit
 fu! RunJunitForCurrentFile()
   let unit_test = expand('%:t:r')
+  if unit_test !~ "Test$"
+    let unit_test = unit_test . "Test"
+  endif
+
 	belowright split | enew 
   echo "Running junit test **" . unit_test . " ..."
   execute 'r!mvn -o -DskipTests=false -Dtest=**' . unit_test . ' -DfailIfNoTests=false test'
@@ -129,43 +140,55 @@ silent call pathogen#infect()
 " Tabulação padrão com \t
 call SetupNormalTabs()
 
-" Mapeamento de tipos de arquivo especiais
-au BufRead,BufNewFile *.bsh call setfiletype java
+" Mapeamentos para o teclado
+augroup filemapping
+  au!
+  " Mapeamento de tipos de arquivo especiais
+  au BufRead,BufNewFile *.bsh call setfiletype java
 
-" Mapeamento de tabs por tipos especiais de arquivos
-au BufRead,BufNewFile *.py call SetupSpaceTabs()
-au BufRead,BufNewFile Makefile call SetupNormalTabs()
-au BufRead,BufNewFile makefile call SetupNormalTabs()
-au BufRead,BufNewFile *.xml call SetupNormalTabs()
-au BufRead,BufNewFile *.txt call Setup2SpaceTabs()
-au BufRead,BufNewFile *.vimrc call Setup2SpaceTabs()
-au BufRead,BufNewFile vimrc call Setup2SpaceTabs()
-au BufRead,BufNewFile *.java compiler javac
-au BufRead,BufNewFile *.java set makeprg=javac\ %
-au BufRead,BufNewFile *.java set omnifunc=javacomplete#Complete
+  " Mapeamento de tabs por tipos especiais de arquivos
+  au BufRead,BufNewFile *.py call SetupSpaceTabs()
+  au BufRead,BufNewFile Makefile call SetupNormalTabs()
+  au BufRead,BufNewFile makefile call SetupNormalTabs()
+  au BufRead,BufNewFile *.xml call SetupNormalTabs()
+  au BufRead,BufNewFile *.txt call Setup2SpaceTabs()
+  au BufRead,BufNewFile *.vimrc call Setup2SpaceTabs()
+  au BufRead,BufNewFile vimrc call Setup2SpaceTabs()
+  au BufRead,BufNewFile *.java compiler javac
+  au BufRead,BufNewFile *.java set makeprg=javac\ %
+  au BufRead,BufNewFile *.java set omnifunc=javacomplete#Complete
+
+  " Conveniencia para revisar o diff antes do commit
+  au BufRead /tmp/hg-editor-* call HgDiff()
+augroup END
 
 " Configura ~/workspace para usar com o Maven
 augroup workspace
-  if !exists("s:workspace_init")
-    let s:workspace_init = 1
-    autocmd BufNewFile,BufRead */workspace/* cd <afile>:~:s?\~/workspace/\([^/]\+\)/.*?\~/workspace/\1?
-    autocmd BufNewFile,BufRead */workspace/* compiler ant
-    autocmd BufNewFile,BufRead */workspace/* set makeprg=mvn\ -q\ -o\ test-compile\ -f\ ./pom.xml
-    autocmd BufNewFile,BufRead */workspace/* set errorformat=\[ERROR]\ %f:[%l\\,%v]\ %m
-    autocmd BufNewFile,BufRead */workspace/* call KeyMap("<C-F11>", ":start mvn -f pom.xml appengine:devserver")
-    " Configura o taglist como Overview
-    let Tlist_Use_Right_Window = 1
-    autocmd BufNewFile,BufRead */workspace/* set tags=~/workspace/.tags
-  endif
+  au!
+  let s:workspace_init = 1
+  autocmd BufNewFile,BufRead */workspace/* cd <afile>:~:s?\~/workspace/\([^/]\+\)/.*?\~/workspace/\1?
+  autocmd BufNewFile,BufRead */workspace/* compiler ant
+  autocmd BufNewFile,BufRead */workspace/* set makeprg=mvn\ -q\ -o\ test-compile\ -f\ ./pom.xml
+  autocmd BufNewFile,BufRead */workspace/* set errorformat=\[ERROR]\ %f:[%l\\,%v]\ %m
+  autocmd BufNewFile,BufRead */workspace/* call KeyMap("<C-F11>", ":start mvn -f pom.xml appengine:devserver")
+  " Configura o taglist como Overview
+  let Tlist_Use_Right_Window = 1
+  autocmd BufNewFile,BufRead */workspace/* set tags=~/workspace/.tags
 augroup END
 
 " ********** Atalhos do Teclado **********
 
 " Mapeia o CTRL+S para salvar o arquivo
 call KeyMap('<C-S>', ':update')
+" Mapeia o CTRL+X para fechar o arquivo
+call KeyMap("<C-X>", ":quit")
+" Mapeamentos para o Mercurial
 call KeyMap("<C-P>", ":call HgPull()")
 call KeyMap("<C-U>", ":call HgPush()")
+" Mapeamentos para desenvolvimento
 call KeyMap("<C-F8>", ":MakeAndFix")
+call KeyMap("<C-F9>", ":Junit")
+" Mapeamentos para navegador de tags/arquivos
 call KeyMap("<C-F12>", ":NERDTreeToggle<CR>:TlistToggle")
 
 " Configura o fechamento automatico
