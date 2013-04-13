@@ -6,7 +6,25 @@
 " Licença:
 "   Creative Commons CC-BY-SA
 
-" ********** Funções úteis **********
+" ********** Gestão de Plugins **********
+
+" Instale com os comandos
+" $ git clone https://github.com/gmarik/vundle.git ~/.vim/bundle/vundle
+" $ vim +BundleInstall +qall
+
+filetype off
+
+set runtimepath+=~/.vim/bundle/vundle/
+call vundle#rc()
+
+Bundle 'gmarik/vundle'
+Bundle 'snipMate'
+Bundle 'scrooloose/nerdtree'
+Bundle 'taglist.vim'
+
+filetype plugin indent on
+
+" ********** Funções **********
 
 " Configurações de tabulação
 
@@ -78,70 +96,6 @@ fu! StartJdb(port)
   execute jdb
 endfu
 
-" ********** Gestão de Plugins **********
-
-" pathogen.vim - Gerencia bundles para simplificar a manutenção de plugins
-fu! InstallPathogen()
-  echo "Instalando pathogen.vim ..."
-  let wget="wget 'http://www.vim.org/scripts/download_script.php?src_id=19375' -O ~/.vim/autoload/pathogen.vim "
-  let mkdirs="mkdir -p ~/.vim/{autoload,bundle}"
-  execute "silent ! if [ \\! -f ~/.vim/autoload/pathogen.vim ] ; then " . mkdirs . " ; " . wget . " ; fi"
-endfu
-
-" Função auxiliar para instalar o plugin do vim com base em seu nome e id de download
-fu! InstallVimPlugin(name, downloadid, type)
-  call InstallPathogen()
-  echo "Instalando plugind id " . a:name . ", r=" . a:downloadid
-  
-  let url="http://www.vim.org/scripts/download_script.php?src_id=" . a:downloadid
-  let wget="wget -c '" . url . "' -O /tmp/" . a:downloadid . ".zip"
-  
-  if a:type == "zip"
-    let unzip="unzip /tmp/" . a:downloadid . ".zip -d ~/.vim/bundle/" . a:name
-  else
-    let unzip="mkdir -p ~/.vim/bundle/" . a:name . " ;"
-    let unzip= unzip . "tar xf /tmp/" . a:downloadid . ".zip -C ~/.vim/bundle/" . a:name
-  endif
-
-  execute "silent ! if [ \\! -d ~/.vim/bundle/" . a:name . " ] ; then "  . wget . " && " . unzip . " ; fi"
-endfu
-
-" snipmate.vim - Code templates
-fu! InstallSnipmate()
-  call InstallPathogen()
-  let wget="wget -c 'https://github.com/csexton/snipmate.vim/archive/master.zip' -O /tmp/snipmate.zip"
-  let unzip="unzip /tmp/snipmate.zip -d $HOME/.vim/bundle"
-  execute "silent ! if [ \\! -d ~/.vim/bundle/snipmate.vim-master ] ; then " . wget . " ; " . unzip . " ; fi"
-endfu 
-
-" jcomplete.vim - Autocomplete para a JDK
-fu! InstallJComplete()
-  call InstallVimPlugin("jcomplete", "14914", "zip")
-endfu
-
-" taglist.vim - Outline do código
-fu! InstallTagList()
-  call InstallVimPlugin("taglist", "19574", "zip")
-endfu
-
-" nerdtree.vim - Filebrowser
-fu! InstallNerdTree()
-  call InstallVimPlugin("nerdtree", "17123", "zip")
-endfu
-
-" yavdb.vim - Debugger (gdb, jdb)
-fu! InstallYavdb()
-  call InstallVimPlugin("yavdb", "7349", "tgz")
-endfu
-
-" Setup para instalar todos os plugins por padrão
-fu! InstallAllPlugins()
-  call InstallSnipmate()
-  call InstallJComplete()
-  call InstallTagList()
-  call InstallNerdTree()
-endfu
-
 " lazyness - atalhos para digitar menos
 command Review call HgDiff()
 command Junit call RunJunitForCurrentFile()
@@ -151,9 +105,6 @@ command Outline TlistToggle
 command MakeAndFix make! | cw
 
 " ********** Workspace de Trabalho **********
-
-" Carrega o pathogen, silenciosamente.
-silent call pathogen#infect()
 
 " Tabulação padrão com \t
 call SetupNormalTabs()
