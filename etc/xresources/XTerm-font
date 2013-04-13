@@ -1,0 +1,4 @@
+! Fonte legível para terminal
+XTerm*faceName: terminus
+XTerm*faceSize: 10pt
+! vim:filetype=xdefaults:

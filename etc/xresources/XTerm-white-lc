@@ -1,0 +1,27 @@
+! white background low contrast
+!black
+XTerm*color0:         #353535
+XTerm*color8:         #666666
+!red
+XTerm*color1:           #7b3303
+XTerm*color9:           #804015
+!green
+XTerm*color2:         #556B2F
+XTerm*color10:        #4e6d19
+!brown/yellow
+XTerm*color3:           #a67b07
+XTerm*color11:          #a67b07
+!blue
+XTerm*color4:           #427288
+XTerm*color12:          #6b94a7
+!magenta
+XTerm*color5:           #705b46
+XTerm*color13:          #664a30
+!cyan
+XTerm*color6:         #A7A15E
+XTerm*color14:        #F0E68C
+!white
+XTerm*color7:         #DDDDDD
+XTerm*color15:        #bcbcbc
+
+! vim:filetype=xdefaults:
