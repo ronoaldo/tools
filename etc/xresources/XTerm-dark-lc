@@ -1,0 +1,22 @@
+! Tema escuro, baixo contraste
+
+XTerm*background:  #000000
+XTerm*foreground:  #bfbfbf
+XTerm*color0:      #000000
+XTerm*color1:      #9e1828
+XTerm*color2:      #aece92
+XTerm*color3:      #968a38
+XTerm*color4:      #414171
+XTerm*color5:      #963c59
+XTerm*color6:      #418179
+XTerm*color7:      #bebebe
+XTerm*color8:      #666666
+XTerm*color9:      #cf6171
+XTerm*color10:     #c5f779
+XTerm*color11:     #fff796
+XTerm*color12:     #4186be
+XTerm*color13:     #cf9ebe
+XTerm*color14:     #71bebe
+XTerm*color15:     #ffffff
+
+! vim:filetype=xdefaults:
