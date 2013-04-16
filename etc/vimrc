@@ -83,7 +83,7 @@ endfu
 fu! HgDiff()
   call OpenTempWindow("Mercurial Changes", 1)
   setfiletype diff
-  execute 'r!hg diff --git'
+  execute 'silent r!hg diff --git'
   0
 endfu
 
@@ -129,13 +129,13 @@ fu! StartJdb(port)
 endfu
 
 " lazyness - atalhos para digitar menos
-command Review call HgDiff()
-command Gwtc !mvn -o gwt:compile
-command IndexWorkspace call RunCTagsInWorkspace()
+command! Review call HgDiff()
+command! Gwtc !mvn -o gwt:compile
+command! IndexWorkspace call RunCTagsInWorkspace()
 
-command Build make! | cw
-command Test  call RunJunitForCurrentFile()
-command Debug call StartJdb(5005)
+command! Build make! | cw
+command! Test  call RunJunitForCurrentFile()
+command! Debug call StartJdb(5005)
 
 " ********** Workspace de Trabalho **********
 
@@ -146,7 +146,7 @@ call SetupNormalTabs()
 augroup filemapping
   au!
   " Mapeamento de tipos de arquivo especiais
-  au BufRead,BufNewFile *.bsh call setfiletype java
+  au BufRead,BufNewFile *.bsh set filetype=java
 
   " Mapeamento de tabs por tipos especiais de arquivos
   au BufRead,BufNewFile *.py call SetupSpaceTabs()
