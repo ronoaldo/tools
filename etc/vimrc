@@ -98,7 +98,7 @@ fu! RunJunitForCurrentFile()
   call OpenTempWindow("Junit Reports", 1)
   
   echom "Running junit test **" . unit_test . " ..."
-  let junit = 'r!mvn -o -DskipTests=false -Dtest=**' . unit_test
+  let junit = 'silent r!mvn -o -DskipTests=false -Dtest=**' . unit_test
   let junit = junit . ' -DfailIfNoTests=false test'
   execute junit
 endfu
@@ -107,7 +107,7 @@ endfu
 fu! RunCTagsInWorkspace()
   echom "Indexing .tags file ..."
   let ctags = "!rm -vf ~/workspace/.tags && find ~/workspace/ -type f -iname '*.java' |"
-  let ctags = ctag . " xargs ctags -a -f ~/workspace/.tags  -L - --totals"
+  let ctags = ctags . " xargs ctags -a -f ~/workspace/.tags  -L - --totals"
   execute ctags
 
   set tags=~/workspace/.tags
