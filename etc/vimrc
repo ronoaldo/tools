@@ -6,7 +6,25 @@
 " Licença:
 "   Creative Commons CC-BY-SA
 
-" ********** Funções úteis **********
+" ********** Gestão de Plugins **********
+
+" Instale com os comandos
+" $ git clone https://github.com/gmarik/vundle.git ~/.vim/bundle/vundle
+" $ vim +BundleInstall +qall
+
+filetype off
+
+set runtimepath+=~/.vim/bundle/vundle/
+call vundle#rc()
+
+Bundle 'gmarik/vundle'
+Bundle 'snipMate'
+Bundle 'scrooloose/nerdtree'
+Bundle 'taglist.vim'
+
+filetype plugin indent on
+
+" ********** Funções **********
 
 " Configurações de tabulação
 
@@ -25,6 +43,34 @@ fu! Setup2SpaceTabs()
     set sw=2 ts=2 st=2 et si ai
 endfu
 
+" Abre uma janela temprária, opcionalmente limpando
+" os valores atualmente existentes no mesmo buffer.
+fu! OpenTempWindow(name, clear) abort
+  let name = substitute(a:name, "[^a-zA-Z0-9]", "_", "g")
+  let bn = bufnr(name)
+  if bn == -1
+    execute "new " . name
+    let bn = bufnr(name)
+    setlocal buftype=nofile
+    setlocal bufhidden=hide
+    setlocal noswapfile
+    setlocal buflisted
+  else
+    let wn = bufwinnr(bn)
+    if wn != -1
+      exe wn . "wincmd w"
+    else
+      exe "split +buffer" . bn
+    endif
+  endif
+
+  if a:clear
+    normal gg
+    normal dG
+  endif
+  wincmd J
+endfu
+
 " Mercurial
 fu! HgPull()
   !hg pull
@@ -35,33 +81,37 @@ fu! HgPush()
 endfu
 
 fu! HgDiff()
-  belowright split
-  enew
-  setlocal buftype=nofile
-  setlocal bufhidden=hide
-  setlocal noswapfile
+  call OpenTempWindow("Mercurial Changes", 1)
   setfiletype diff
-  execute 'r!hg diff --git'
+  execute 'silent r!hg diff --git'
   0
 endfu
 
 " Maven JUnit
 fu! RunJunitForCurrentFile()
   let unit_test = expand('%:t:r')
+  
   if unit_test !~ "Test$"
     let unit_test = unit_test . "Test"
   endif
 
-	belowright split | enew 
-  echo "Running junit test **" . unit_test . " ..."
-  execute 'r!mvn -o -DskipTests=false -Dtest=**' . unit_test . ' -DfailIfNoTests=false test'
+  call OpenTempWindow("Junit Reports", 1)
+  
+  echom "Running junit test **" . unit_test . " ..."
+  let junit = 'silent r!mvn -o -DskipTests=false -Dtest=**' . unit_test
+  let junit = junit . ' -DfailIfNoTests=false test'
+  execute junit
 endfu
 
 " Exuberant Ctags
 fu! RunCTagsInWorkspace()
-  echo "Indexing .tags file ..."
-  !rm -vf ~/workspace/.tags && find ~/workspace/ -type f -iname '*.java' | xargs ctags -a -f ~/workspace/.tags  -L - --totals
+  echom "Indexing .tags file ..."
+  let ctags = "!rm -vf ~/workspace/.tags && find ~/workspace/ -type f -iname '*.java' |"
+  let ctags = ctags . " xargs ctags -a -f ~/workspace/.tags  -L - --totals"
+  execute ctags
+
   set tags=~/workspace/.tags
+  echom "Tag path: " . &tags
 endfu
 
 " Mapeamento de atalhos conveniente
@@ -78,82 +128,16 @@ fu! StartJdb(port)
   execute jdb
 endfu
 
-" ********** Gestão de Plugins **********
-
-" pathogen.vim - Gerencia bundles para simplificar a manutenção de plugins
-fu! InstallPathogen()
-  echo "Instalando pathogen.vim ..."
-  let wget="wget 'http://www.vim.org/scripts/download_script.php?src_id=19375' -O ~/.vim/autoload/pathogen.vim "
-  let mkdirs="mkdir -p ~/.vim/{autoload,bundle}"
-  execute "silent ! if [ \\! -f ~/.vim/autoload/pathogen.vim ] ; then " . mkdirs . " ; " . wget . " ; fi"
-endfu
-
-" Função auxiliar para instalar o plugin do vim com base em seu nome e id de download
-fu! InstallVimPlugin(name, downloadid, type)
-  call InstallPathogen()
-  echo "Instalando plugind id " . a:name . ", r=" . a:downloadid
-  
-  let url="http://www.vim.org/scripts/download_script.php?src_id=" . a:downloadid
-  let wget="wget -c '" . url . "' -O /tmp/" . a:downloadid . ".zip"
-  
-  if a:type == "zip"
-    let unzip="unzip /tmp/" . a:downloadid . ".zip -d ~/.vim/bundle/" . a:name
-  else
-    let unzip="mkdir -p ~/.vim/bundle/" . a:name . " ;"
-    let unzip= unzip . "tar xf /tmp/" . a:downloadid . ".zip -C ~/.vim/bundle/" . a:name
-  endif
-
-  execute "silent ! if [ \\! -d ~/.vim/bundle/" . a:name . " ] ; then "  . wget . " && " . unzip . " ; fi"
-endfu
-
-" snipmate.vim - Code templates
-fu! InstallSnipmate()
-  call InstallPathogen()
-  let wget="wget -c 'https://github.com/csexton/snipmate.vim/archive/master.zip' -O /tmp/snipmate.zip"
-  let unzip="unzip /tmp/snipmate.zip -d $HOME/.vim/bundle"
-  execute "silent ! if [ \\! -d ~/.vim/bundle/snipmate.vim-master ] ; then " . wget . " ; " . unzip . " ; fi"
-endfu 
-
-" jcomplete.vim - Autocomplete para a JDK
-fu! InstallJComplete()
-  call InstallVimPlugin("jcomplete", "14914", "zip")
-endfu
-
-" taglist.vim - Outline do código
-fu! InstallTagList()
-  call InstallVimPlugin("taglist", "19574", "zip")
-endfu
-
-" nerdtree.vim - Filebrowser
-fu! InstallNerdTree()
-  call InstallVimPlugin("nerdtree", "17123", "zip")
-endfu
-
-" yavdb.vim - Debugger (gdb, jdb)
-fu! InstallYavdb()
-  call InstallVimPlugin("yavdb", "7349", "tgz")
-endfu
-
-" Setup para instalar todos os plugins por padrão
-fu! InstallAllPlugins()
-  call InstallSnipmate()
-  call InstallJComplete()
-  call InstallTagList()
-  call InstallNerdTree()
-endfu
-
 " lazyness - atalhos para digitar menos
-command Review call HgDiff()
-command Junit call RunJunitForCurrentFile()
-command Gwtc !mvn -o gwt:compile
-command IndexWorkspace call RunCTagsInWorkspace()
-command Outline TlistToggle
-command MakeAndFix make! | cw
+command! Review call HgDiff()
+command! Gwtc !mvn -o gwt:compile
+command! IndexWorkspace call RunCTagsInWorkspace()
+
+command! Build make! | cw
+command! Test  call RunJunitForCurrentFile()
+command! Debug call StartJdb(5005)
 
 " ********** Workspace de Trabalho **********
-
-" Carrega o pathogen, silenciosamente.
-silent call pathogen#infect()
 
 " Tabulação padrão com \t
 call SetupNormalTabs()
@@ -162,7 +146,7 @@ call SetupNormalTabs()
 augroup filemapping
   au!
   " Mapeamento de tipos de arquivo especiais
-  au BufRead,BufNewFile *.bsh call setfiletype java
+  au BufRead,BufNewFile *.bsh set filetype=java
 
   " Mapeamento de tabs por tipos especiais de arquivos
   au BufRead,BufNewFile *.py call SetupSpaceTabs()
@@ -178,6 +162,9 @@ augroup filemapping
 
   " Conveniencia para revisar o diff antes do commit
   au BufRead /tmp/hg-editor-* call HgDiff()
+
+  " Posiciona a janela QuickFix sempre na parte inferior da tela
+  au FileType qf wincmd J
 augroup END
 
 " Configura ~/workspace para usar com o Maven
@@ -188,7 +175,6 @@ augroup workspace
   autocmd BufNewFile,BufRead */workspace/* compiler ant
   autocmd BufNewFile,BufRead */workspace/* set makeprg=mvn\ -q\ -o\ test-compile\ -f\ ./pom.xml
   autocmd BufNewFile,BufRead */workspace/* set errorformat=\[ERROR]\ %f:[%l\\,%v]\ %m
-  autocmd BufNewFile,BufRead */workspace/* call KeyMap("<C-F11>", ":start mvn -f pom.xml appengine:devserver")
   " Configura o taglist como Overview
   let Tlist_Use_Right_Window = 1
   autocmd BufNewFile,BufRead */workspace/* set tags=~/workspace/.tags
@@ -199,20 +185,22 @@ augroup END
 " Mapeia o CTRL+S para salvar o arquivo
 call KeyMap('<C-S>', ':update')
 " Mapeia o CTRL+X para fechar o arquivo
-call KeyMap("<C-X>", ":quit")
+call KeyMap("<C-X>", ":quitall")
 " Mapeamentos para o Mercurial
 call KeyMap("<C-P>", ":call HgPull()")
 call KeyMap("<C-U>", ":call HgPush()")
-" Mapeamentos para desenvolvimento
-call KeyMap("<C-F8>", ":MakeAndFix")
-call KeyMap("<C-F9>", ":Junit")
+" Mapeamentos para desenvolvimento Java
+call KeyMap("<C-F8>", ":Build")
+call KeyMap("<C-F9>", ":Test")
+call KeyMap("<C-F10>", ":Debug")
 " Mapeamentos para navegador de tags/arquivos
-call KeyMap("<C-F12>", ":NERDTreeToggle<CR>:TlistToggle")
+call KeyMap("<C-F11>", ":NERDTreeToggle")
+call KeyMap("<C-F12>", ":TlistToggle")
 
 " Configura o fechamento automatico
-imap { {}<left>
-imap ( ()<left>
-imap [ []<left>
+inoremap { {}<left>
+inoremap ( ()<left>
+inoremap [ []<left>
 
 " ********** Opções de genéricas **********
 
