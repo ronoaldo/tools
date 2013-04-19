@@ -87,8 +87,19 @@ fu! HgDiff()
   0
 endfu
 
+" Maven find project directory
+fu! MvnMoveToProjectDir()
+  let l:pom = findfile("pom.xml", ";")
+  if filereadable(l:pom)
+    let l:project = fnamemodify(l:pom, ":h")
+    execute "cd " . l:project
+  else
+    cd <afile>:~:s?\~/workspace/\([^/]\+\)/.*?\~/workspace/\1?
+  endif
+endfu
+
 " Maven JUnit
-fu! RunJunitForCurrentFile()
+fu! MvnSurefireForCurrentFile()
   let unit_test = expand('%:t:r')
   
   if unit_test !~ "Test$"
@@ -104,7 +115,7 @@ fu! RunJunitForCurrentFile()
 endfu
 
 " Exuberant Ctags
-fu! RunCTagsInWorkspace()
+fu! RebuildTagsInWorkspace()
   echom "Indexing .tags file ..."
   let ctags = "!rm -vf ~/workspace/.tags && find ~/workspace/ -type f -iname '*.java' |"
   let ctags = ctags . " xargs ctags -a -f ~/workspace/.tags  -L - --totals"
@@ -134,7 +145,7 @@ command! Gwtc !mvn -o gwt:compile
 command! IndexWorkspace call RunCTagsInWorkspace()
 
 command! Build make! | cw
-command! Test  call RunJunitForCurrentFile()
+command! Test  call MvnSurefireForCurrentFile()
 command! Debug call StartJdb(5005)
 
 " ********** Workspace de Trabalho **********
@@ -167,11 +178,13 @@ augroup filemapping
   au FileType qf wincmd J
 augroup END
 
+
+
 " Configura ~/workspace para usar com o Maven
 augroup workspace
   au!
   let s:workspace_init = 1
-  autocmd BufNewFile,BufRead */workspace/* cd <afile>:~:s?\~/workspace/\([^/]\+\)/.*?\~/workspace/\1?
+  autocmd BufNewFile,BufRead */workspace/* call MvnMoveToProjectDir()
   autocmd BufNewFile,BufRead */workspace/* compiler ant
   autocmd BufNewFile,BufRead */workspace/* set makeprg=mvn\ -q\ -o\ test-compile\ -f\ ./pom.xml
   autocmd BufNewFile,BufRead */workspace/* set errorformat=\[ERROR]\ %f:[%l\\,%v]\ %m
@@ -187,8 +200,8 @@ call KeyMap('<C-S>', ':update')
 " Mapeia o CTRL+X para fechar o arquivo
 call KeyMap("<C-X>", ":quitall")
 " Mapeamentos para o Mercurial
-call KeyMap("<C-P>", ":call HgPull()")
-call KeyMap("<C-U>", ":call HgPush()")
+call KeyMap("<C-U>", ":call HgPull()")
+call KeyMap("<C-P>", ":call HgPush()")
 " Mapeamentos para desenvolvimento Java
 call KeyMap("<C-F8>", ":Build")
 call KeyMap("<C-F9>", ":Test")
