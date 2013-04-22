@@ -43,6 +43,10 @@ fu! Setup2SpaceTabs()
     set sw=2 ts=2 st=2 et si ai
 endfu
 
+fu! Info(msg)
+  execute "echo '\n[ " . a:msg . "]\n'"
+endfu
+
 " Abre uma janela temprária, opcionalmente limpando
 " os valores atualmente existentes no mesmo buffer.
 fu! OpenTempWindow(name, clear) abort
@@ -87,6 +91,13 @@ fu! HgDiff()
   0
 endfu
 
+" Maven Install
+fu! MvnInstall()
+  call Info("Executando maven install ...")
+  call OpenTempWindow("Maven", 1)
+  execute "silent r!mvn -o clean install"
+endfu
+
 " Maven find project directory
 fu! MvnMoveToProjectDir()
   let l:pom = findfile("pom.xml", ";")
@@ -106,16 +117,16 @@ fu! MvnSurefireForCurrentFile()
     let unit_test = unit_test . "Test"
   endif
 
-  call OpenTempWindow("Junit Reports", 1)
-  
-  echom "Running junit test **" . unit_test . " ..."
+  call Info("Junit test **" . unit_test . " ...")
+  call OpenTempWindow("Maven", 1)
+
   let junit = 'silent r!mvn -o -DskipTests=false -Dtest=**' . unit_test
   let junit = junit . ' -DfailIfNoTests=false test'
   execute junit
 endfu
 
 " Exuberant Ctags
-fu! RebuildTagsInWorkspace()
+fu! MvnIndexWorkspace()
   echom "Indexing .tags file ..."
   let ctags = "!rm -vf ~/workspace/.tags && find ~/workspace/ -type f -iname '*.java' |"
   let ctags = ctags . " xargs ctags -a -f ~/workspace/.tags  -L - --totals"
@@ -142,11 +153,12 @@ endfu
 " lazyness - atalhos para digitar menos
 command! Review call HgDiff()
 command! Gwtc !mvn -o gwt:compile
-command! IndexWorkspace call RunCTagsInWorkspace()
+command! IndexWorkspace call MvnIndexWorkspace()
 
 command! Build make! | cw
 command! Test  call MvnSurefireForCurrentFile()
 command! Debug call StartJdb(5005)
+command! Install call MvnInstall()
 
 " ********** Workspace de Trabalho **********
 
@@ -203,6 +215,7 @@ call KeyMap("<C-X>", ":quitall")
 call KeyMap("<C-U>", ":call HgPull()")
 call KeyMap("<C-P>", ":call HgPush()")
 " Mapeamentos para desenvolvimento Java
+call KeyMap("<C-F7>", ":Install")
 call KeyMap("<C-F8>", ":Build")
 call KeyMap("<C-F9>", ":Test")
 call KeyMap("<C-F10>", ":Debug")
