@@ -1,0 +1,42 @@
+#!/usr/bin/env python
+# -*- coding:utf-8 -*-
+#
+# Copyright 2013 Ronoaldo JLP (http://www.ronoaldo.net)
+# 
+#   Licensed under the Apache License, Version 2.0 (the 'License');
+#   you may not use this file except in compliance with the License.
+#   You may obtain a copy of the License at
+#
+#       http://www.apache.org/licenses/LICENSE-2.0
+#
+#   Unless required by applicable law or agreed to in writing, software
+#   distributed under the License is distributed on an 'AS IS' BASIS,
+#   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#   See the License for the specific language governing permissions and
+#   limitations under the License.
+
+import urllib
+import json
+import sys
+import optparse
+
+class MavenCentralSearch(object):
+    """
+    Maven CLI search on Central repository, powered by
+    the Sonatype REST API.
+    """
+
+    SOLR = "http://search.maven.org/solrsearch/select?q=%(terms)s&rows=20&wt=json"
+
+    def search(self, terms):
+        url = self.SOLR % {"terms" : (" ").join(terms) }
+        result = json.load(urllib.urlopen(url))
+        for doc in result['response']['docs']:
+            print "%s:%s:%s" % (doc['g'], doc['a'], doc['latestVersion'])
+
+    def run(self, *args):
+        self.search(*args)
+
+if __name__ == "__main__":
+    app = MavenCentralSearch()
+    app.run(sys.argv[1:])
