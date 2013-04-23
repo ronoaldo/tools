@@ -173,6 +173,7 @@ augroup filemapping
 
   " Mapeamento de tabs por tipos especiais de arquivos
   au BufRead,BufNewFile *.py call SetupSpaceTabs()
+  au FileType python call SetupSpaceTabs()
   au BufRead,BufNewFile Makefile call SetupNormalTabs()
   au BufRead,BufNewFile makefile call SetupNormalTabs()
   au BufRead,BufNewFile *.xml call SetupNormalTabs()
