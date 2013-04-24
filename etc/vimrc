@@ -44,7 +44,7 @@ fu! Setup2SpaceTabs()
 endfu
 
 fu! Info(msg)
-  execute "echo '\n[ " . a:msg . "]\n'"
+  execute "echom '[ " . a:msg . " ]'"
 endfu
 
 " Abre uma janela temprária, opcionalmente limpando
@@ -77,10 +77,12 @@ endfu
 
 " Mercurial
 fu! HgPull()
+  call Info("Pulling changes from remote repository ...")
   !hg pull
 endfu
 
 fu! HgPush()
+  call Info("Pushing changes to remote repository ...")
   !hg push
 endfu
 
@@ -93,9 +95,10 @@ endfu
 
 " Maven Install
 fu! MvnInstall()
-  call Info("Executando maven install ...")
+  call Info("Building and installing artifacts ...")
   call OpenTempWindow("Maven", 1)
   execute "silent r!mvn -o clean install"
+  0
 endfu
 
 " Maven find project directory
@@ -112,7 +115,6 @@ endfu
 " Maven JUnit
 fu! MvnSurefireForCurrentFile()
   let unit_test = expand('%:t:r')
-  
   if unit_test !~ "Test$"
     let unit_test = unit_test . "Test"
   endif
@@ -120,20 +122,21 @@ fu! MvnSurefireForCurrentFile()
   call Info("Junit test **" . unit_test . " ...")
   call OpenTempWindow("Maven", 1)
 
-  let junit = 'silent r!mvn -o -DskipTests=false -Dtest=**' . unit_test
+  let junit = 'silent 0r!mvn -o -DskipTests=false -Dtest=**' . unit_test
   let junit = junit . ' -DfailIfNoTests=false test'
-  execute junit
+  silent execute junit
+  execute "silent! normal /^Results\<CR>"
 endfu
 
 " Exuberant Ctags
 fu! MvnIndexWorkspace()
-  echom "Indexing .tags file ..."
+  call Info("Indexing .tags file ...")
   let ctags = "!rm -vf ~/workspace/.tags && find ~/workspace/ -type f -iname '*.java' |"
   let ctags = ctags . " xargs ctags -a -f ~/workspace/.tags  -L - --totals"
   execute ctags
 
   set tags=~/workspace/.tags
-  echom "Tag path: " . &tags
+  echo "Tag path: " . &tags
 endfu
 
 " Mapeamento de atalhos conveniente
@@ -145,6 +148,7 @@ endfu
 
 " Inicia o java debugger
 fu! StartJdb(port)
+  call Info("Starting jdb ... ")
   let jdb = "!jdb -sourcepath " . $PWD . "/src/main/java:" . $PWD . "/src/test/java"
   let jdb = jdb . " -port " . a:port
   execute jdb
@@ -177,12 +181,13 @@ augroup filemapping
   au BufRead,BufNewFile Makefile call SetupNormalTabs()
   au BufRead,BufNewFile makefile call SetupNormalTabs()
   au BufRead,BufNewFile *.xml call SetupNormalTabs()
+  au FileType xml call SetupNormalTabs()
   au BufRead,BufNewFile *.txt call Setup2SpaceTabs()
   au BufRead,BufNewFile *.vimrc call Setup2SpaceTabs()
   au BufRead,BufNewFile vimrc call Setup2SpaceTabs()
+  au FileType vim call Setup2SpaceTabs()
   au BufRead,BufNewFile *.java compiler javac
   au BufRead,BufNewFile *.java set makeprg=javac\ %
-  au BufRead,BufNewFile *.java set omnifunc=javacomplete#Complete
 
   " Conveniencia para revisar o diff antes do commit
   au BufRead /tmp/hg-editor-* call HgDiff()
@@ -223,6 +228,8 @@ call KeyMap("<C-F10>", ":Debug")
 " Mapeamentos para navegador de tags/arquivos
 call KeyMap("<C-F11>", ":NERDTreeToggle")
 call KeyMap("<C-F12>", ":TlistToggle")
+" Mapeia o equivalente do Eclipse (CTRL+SHIFT+F) para ':normal gg=G'
+call KeyMap("<C-S-F>", ":normal gg=G")
 
 " Configura o fechamento automatico
 inoremap { {}<left>
