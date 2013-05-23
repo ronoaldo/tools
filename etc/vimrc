@@ -1,17 +1,20 @@
-" ~/.vimrc
+" rono.vim
+"
 " Copyright (2013) Ronoalado JLP (http://www.ronoaldo.net)
 " 
 " Contribuições:
 "   Filipe Peixoto (http://www.filipenos.net)
+" 
 " Licença:
 "   Creative Commons CC-BY-SA
+"
 
-" ********** Gestão de Plugins **********
-
-" Instale com os comandos
+" Instalação:
+" $ wget http://code.ronoaldo.net/ronoaldo-utils/raw/tip/etc/vimrc -O ~/.vim/plugin/rono.vim
 " $ git clone https://github.com/gmarik/vundle.git ~/.vim/bundle/vundle
 " $ vim +BundleInstall +qall
 
+" ********** Gestão de Plugins **********
 filetype off
 
 set runtimepath+=~/.vim/bundle/vundle/
@@ -27,29 +30,36 @@ filetype plugin indent on
 " ********** Funções **********
 
 " Configurações de tabulação
-
 " Tabs Normais
 fu! SetupNormalTabs()
-    set sw=8 ts=8 st=8 noet si ai
+  set sw=8 ts=8 st=8 noet si ai
 endfu
-
 " Tabs com 4 espaços
 fu! SetupSpaceTabs()
-    set sw=4 ts=4 st=4 et si ai
+  set sw=4 ts=4 st=4 et si ai
 endfu
-
 " Tabs com 2 espaços
 fu! Setup2SpaceTabs()
-    set sw=2 ts=2 st=2 et si ai
+  set sw=2 ts=2 st=2 et si ai
 endfu
 
+" ********** Funções Auxiliares **********
+
+" Mensagens ao executar comandos demorados
 fu! Info(msg)
   execute "echom '[ " . a:msg . " ]'"
 endfu
 
+" Mapeamento de atalhos conveniente
+fu! KeyMap(key, action)
+  execute "noremap  <silent> " . a:key . " " . a:action . "<CR>"
+  execute "vnoremap <silent> " . a:key . " <C-C>" . a:action . "<CR>"
+  execute "inoremap <silent> " . a:key . " <C-O>" . a:action . "<CR>"
+endfu
+
 " Abre uma janela temprária, opcionalmente limpando
 " os valores atualmente existentes no mesmo buffer.
-fu! OpenTempWindow(name, clear) abort
+fu! TempWindow(name, clear) abort
   let name = substitute(a:name, "[^a-zA-Z0-9]", "_", "g")
   let bn = bufnr(name)
   if bn == -1
@@ -75,7 +85,8 @@ fu! OpenTempWindow(name, clear) abort
   wincmd J
 endfu
 
-" Mercurial
+" ********** Mercurial **********
+
 fu! HgPull()
   call Info("Pulling changes from remote repository ...")
   !hg pull
@@ -87,16 +98,18 @@ fu! HgPush()
 endfu
 
 fu! HgDiff()
-  call OpenTempWindow("Mercurial Changes", 1)
+  call TempWindow("Mercurial Changes", 1)
   setfiletype diff
   execute 'silent r!hg diff --git'
   0
 endfu
 
+" **********  Maven **********
+
 " Maven Install
 fu! MvnInstall()
   call Info("Building and installing artifacts ...")
-  call OpenTempWindow("Maven", 1)
+  call TempWindow("Maven", 1)
   execute "silent r!mvn -o clean install"
   0
 endfu
@@ -120,7 +133,7 @@ fu! MvnSurefireForCurrentFile()
   endif
 
   call Info("Junit test **" . unit_test . " ...")
-  call OpenTempWindow("Maven", 1)
+  call TempWindow("Maven", 1)
 
   let junit = 'silent 0r!mvn -o -DskipTests=false -Dtest=**' . unit_test
   let junit = junit . ' -DfailIfNoTests=false test'
@@ -139,13 +152,6 @@ fu! MvnIndexWorkspace()
   echo "Tag path: " . &tags
 endfu
 
-" Mapeamento de atalhos conveniente
-fu! KeyMap(key, action)
-  execute "noremap  <silent> " . a:key . " " . a:action . "<CR>"
-  execute "vnoremap <silent> " . a:key . " <C-C>" . a:action . "<CR>"
-  execute "inoremap <silent> " . a:key . " <C-O>" . a:action . "<CR>"
-endfu
-
 " Inicia o java debugger
 fu! StartJdb(port)
   call Info("Starting jdb ... ")
@@ -154,7 +160,18 @@ fu! StartJdb(port)
   execute jdb
 endfu
 
-" lazyness - atalhos para digitar menos
+" Configura a workspace
+fu! MvnConfigureWorkspace()
+  call MvnMoveToProjectDir()
+  compiler ant
+  set makeprg=mvn\ -q\ -o\ test-compile\ -f\ ./pom.xml
+  set errorformat=\[ERROR]\ %f:[%l\\,%v]\ %m
+  set tags=~/workspace/.tags
+  let Tlist_Use_Right_Window = 1
+endfu
+
+" ********** Comandos **********
+
 command! Review call HgDiff()
 command! Gwtc !mvn -o gwt:compile
 command! IndexWorkspace call MvnIndexWorkspace()
@@ -169,7 +186,7 @@ command! Install call MvnInstall()
 " Tabulação padrão com \t
 call SetupNormalTabs()
 
-" Mapeamentos para o teclado
+" Mapeamentos de tipo de arquivo específico
 augroup filemapping
   au!
   " Mapeamento de tipos de arquivo especiais
@@ -196,19 +213,11 @@ augroup filemapping
   au FileType qf wincmd J
 augroup END
 
-
-
 " Configura ~/workspace para usar com o Maven
 augroup workspace
   au!
   let s:workspace_init = 1
-  autocmd BufNewFile,BufRead */workspace/* call MvnMoveToProjectDir()
-  autocmd BufNewFile,BufRead */workspace/* compiler ant
-  autocmd BufNewFile,BufRead */workspace/* set makeprg=mvn\ -q\ -o\ test-compile\ -f\ ./pom.xml
-  autocmd BufNewFile,BufRead */workspace/* set errorformat=\[ERROR]\ %f:[%l\\,%v]\ %m
-  " Configura o taglist como Overview
-  let Tlist_Use_Right_Window = 1
-  autocmd BufNewFile,BufRead */workspace/* set tags=~/workspace/.tags
+  autocmd BufNewFile,BufRead ~/workspace/* call MvnConfigureWorkspace()
 augroup END
 
 " ********** Atalhos do Teclado **********
