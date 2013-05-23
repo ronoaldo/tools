@@ -1,0 +1,57 @@
+#!/usr/bin/env python
+
+from ConfigParser import ConfigParser
+from optparse import OptionParser
+
+import os
+import sys
+
+class Hgrc(object):
+    """
+    Mercurial Repository Configuration Manager.
+    """
+
+    def __init__(self, username=None):
+        self.hgrc = ConfigParser()
+        self.hgrc.readfp(open(".hg/hgrc", "r"))
+        self.username = username
+
+    def update_username(self):
+        if self.username is not None:
+            if not self.hgrc.has_section("ui"):
+                self.hgrc.add_section("ui")
+            self.hgrc.set("ui", "username", self.username)
+
+
+    def write_config(self):
+        self.update_username()
+        self.hgrc.write(open(".hg/hgrc", "w"))
+        sys.stdout.write(".hg/hgrc updated\n")
+        sys.stdout.flush()
+
+    def print_config(self):
+        self.update_username()
+        self.hgrc.write(sys.stdout)
+        sys.stdout.flush()
+
+def options():
+    parser = OptionParser()
+    parser.add_option("-u","--user", dest="username", default=None,
+            help="Username to set as default user in [ui] group")
+    parser.add_option("-d", "--dry-run", dest="dry_run", default=False,
+            action="store_true", help="Debug only")
+    return parser.parse_args()
+
+if __name__ == "__main__":
+    if not os.path.exists(".hg/hgrc"):
+        msg = "Unable to find .hg/hgrc. Are you in "
+        msg += "the root of yor mercurial repository?"
+        raise RuntimeError(msg)
+
+    options, args = options()
+    hgrc = Hgrc(options.username)
+
+    if options.dry_run:
+        hgrc.print_config()
+    else:
+        hgrc.write_config()
