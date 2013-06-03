@@ -6,6 +6,7 @@ from optparse import OptionParser
 
 import json
 import sys
+import csv
 
 class BenchmarkEmailApiError(Exception):
     """
@@ -66,6 +67,36 @@ class BenchmarkEmailCli(object):
             raise RuntimeError("Please inform a method name or script")
 
     # Scripts
+
+    def export_all_stats(self):
+        """
+        Export all statistics for all mailings in the current account.
+        """
+        api = BenchmarkEmailApi(token=self.options.token)
+
+        page = 0
+        page_size = 300
+        done = False
+
+        csv_writer = csv.writer(sys.stdout)
+        csv_writer.writerow(["id", "emailName", "toListName", \
+                "status", "createdDate", "scheduleDate", \
+                "mailSent", "opens", "clicks", "bounces",
+                "unsubscribers", "abuseReports", "subject"])
+        while not done:
+            campaigns = api.reportGet("", page, page_size, "date", "asc")
+
+            for c in campaigns:
+                s = api.reportGetSummary(c["id"])
+                csv_writer.writerow([c["id"], c["emailName"], c["toListName"], \
+                    c["status"], c["createdDate"], c["scheduleDate"], \
+                    s["mailSent"], s["opens"], s["clicks"], s["bounces"], \
+                    s["unsubscribes"], s["abuseReports"], ])
+            if len(campaigns) < page_size:
+                done = True
+            page += 1
+            sys.stdout.flush()
+        csv_writer.close()
 
     def export_bounces(self):
         """
