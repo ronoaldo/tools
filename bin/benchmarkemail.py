@@ -7,6 +7,7 @@ from optparse import OptionParser
 import json
 import sys
 import csv
+import datetime
 
 class BenchmarkEmailApiError(Exception):
     """
@@ -49,6 +50,8 @@ class BenchmarkEmailCli(object):
         parser.add_option("-t", "--token", dest="token")
         parser.add_option("-m", "--method", dest="method")
         parser.add_option("-s", "--script", dest="script")
+        parser.add_option("-l", "--limit", dest="limit", default=sys.maxint)
+        parser.add_option("-a", "--account", dest="account")
         return parser.parse_args()
 
     def run(self):
@@ -68,7 +71,7 @@ class BenchmarkEmailCli(object):
 
     # Scripts
 
-    def export_all_stats(self):
+    def campaign_summary(self):
         """
         Export all statistics for all mailings in the current account.
         """
@@ -77,9 +80,10 @@ class BenchmarkEmailCli(object):
         page = 0
         page_size = 300
         done = False
+        count = 0
 
         csv_writer = csv.writer(sys.stdout)
-        csv_writer.writerow(["id", "emailName", "toListName", \
+        csv_writer.writerow(["account","id", "emailName", "toListName", \
                 "status", "createdDate", "scheduleDate", \
                 "mailSent", "opens", "clicks", "bounces",
                 "unsubscribers", "abuseReports", "subject"])
@@ -88,27 +92,30 @@ class BenchmarkEmailCli(object):
 
             for c in campaigns:
                 s = api.reportGetSummary(c["id"])
-                csv_writer.writerow([c["id"], c["emailName"], c["toListName"], \
+                csv_writer.writerow([self.options.account,
+                    c["id"], c["emailName"], c["toListName"], \
                     c["status"], c["createdDate"], c["scheduleDate"], \
                     s["mailSent"], s["opens"], s["clicks"], s["bounces"], \
                     s["unsubscribes"], s["abuseReports"], ])
-            if len(campaigns) < page_size:
+                count += 1
+            if len(campaigns) < page_size or count >= self.options.limit:
                 done = True
             page += 1
             sys.stdout.flush()
-        csv_writer.close()
 
-    def export_bounces(self):
+    def list_bounces(self):
         """
         Export all bounces from the current account, for all lists
         """
         self._export_by_type("ConfirmedBounces")
 
-    def export_optout(self):
+    def list_optout(self):
         """
         Export all optouts from the current account, for all lists
         """
         self._export_by_type("Optout")
+
+    # Internal helper methods
 
     def _export_by_type(self, contact_type):
         """
@@ -120,20 +127,33 @@ class BenchmarkEmailCli(object):
         api = BenchmarkEmailApi(token=self.options.token)
         lists = api.listGet("", 0, 300, "", "")
         print >> sys.stderr, "Exporting %s lists ..." % len(lists)
+        csv_writer = csv.writer(sys.stdout)
+        csv_writer.writerow(["account", "listname", "email", "domain",
+            "eventtype", "eventdate",])
 
         for i, l in enumerate(lists):
             page = 0
             page_size = 100
+            if page_size > self.options.limit:
+                page_size = self.options.limit
             done = False
+            count = 0
 
             while not done:
                 contacts = api.listGetContactsByType(
-                    l["id"], "", page, page_size, "" ,"", contact_type
-                )
+                        l["id"], "", page, page_size, "" ,"", contact_type
+                        )
                 for j, c in enumerate(contacts):
-                    print "%s,%s" % (l["listname"], c["email"])
+                    d = api.listGetContactDetails(l["id"], c["email"])
+                    domain = c["email"].split("@")[1]
+                    mtime = datetime.datetime.strptime(d['timestamp'], "%b %d, %Y")
+                    csv_writer.writerow([self.options.account,
+                        l["listname"], c["email"], domain,
+                        contact_type, mtime.isoformat(),])
+                    sys.stdout.flush()
+                    count += 1
 
-                if len(contacts) < page_size:
+                if len(contacts) < page_size or count >= self.options.limit:
                     done = True
                 page += page_size
 
