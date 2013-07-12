@@ -1,0 +1,101 @@
+#!/bin/bash
+
+debug() {
+	if [ ! -z "$DEBUG" ] ; then
+		echo "$@"
+	fi
+}
+
+display_path() {
+	echo "$PATH" | tr ':' '\n'
+}
+
+add_to_path() {
+	touch $HOME/.path
+	echo "$1" >> $HOME/.path
+}
+
+add_path_support() {
+	if ! grep -q -1 "#PATH_MANAGER" $HOME/.bashrc ; then
+		FILE="$(readlink -f "$0")"
+		echo "#PATH_MANAGER" >> $HOME/.bashrc
+		echo "[ -x $FILE ] && source $FILE" >> $HOME/.bashrc
+	fi
+}
+
+# Test if $1 contains $2
+contains() {
+	case "$1" in
+		*${2}*)
+			return 0
+		;;
+	esac
+	return 1
+}
+
+reload_path() {
+	touch $HOME/.path
+
+	display_path | grep -v ^$ > /tmp/$$.path
+	cat $HOME/.path | grep -v ^$ >> /tmp/$$.path
+	
+	#debug "/tmp/$$.path= [ $( cat /tmp/$$.path ) ]"
+
+	path=
+	while read p ; do
+		if contains "$path" ":$p" ; then
+			debug "$p já esta em $path"
+		else
+			debug "Adicionando $p não está em $path"
+			path="$path:$p"
+		fi
+	done < /tmp/$$.path
+
+	debug "New computed path: $path"
+
+	export PATH="${path}"
+	rm /tmp/$$.path
+}
+
+usage() {
+	cat <<EOF
+$(basename $0) - Simple Path Manager for Unix
+
+Usage: $(basename $0) [-d|-a|-c]
+
+Options:
+	-d
+	--display
+	--print
+		Displays currently user-friendly path, one
+		entry per line
+	-a path
+	--add path
+		Adds a new path to the path file ~/.path
+	-c
+	--configure
+		Configures your ~/.bashrc file to read and
+		add paths from ~/.path
+
+To reload your PATH:
+$ source \$(which path-manager)
+EOF
+}
+
+case $1 in
+	-d|--display|--print)
+		display_path
+		;;
+	-a|--add)
+		add_to_path "$1"
+		;;
+	-c|--configure)
+		add_path_support
+		;;
+	-h|--help|-?)
+		usage
+		;;
+	*)
+		reload_path || true
+		;;
+esac
