@@ -101,6 +101,7 @@ case $1 in
 		display_path
 		;;
 	-a|--add)
+		shift
 		add_to_path "$1"
 		;;
 	-c|--configure)
