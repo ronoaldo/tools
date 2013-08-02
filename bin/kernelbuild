@@ -22,7 +22,7 @@ set -e
 
 # Allows configuration of default 'run as sudo' command.
 export SUDO="${SUDO:-sudo}"
-export KVER="3.7.10"
+export KVER="latest"
 export BUILD="1"
 export LOG="$PWD/linux-$(date +%Y%d%m-%H%M%S).log"
 
@@ -76,7 +76,7 @@ install_build_dependencies() {
 }
 
 fetch_kernel() {
-	if [ ! -f linux-$KVER.tar.bz2 ] ; then
+	if [ ! -f linux-$KVER.tar.xz ] ; then
 		info "Downloading kernel sources ..."
 		wget -c "http://www.kernel.org/pub/linux/kernel/v3.x/linux-$KVER.tar.xz"
 	fi
@@ -88,7 +88,7 @@ unpack_kernel() {
 		return 0
 	fi
 	info "Unpacking kernel sources ..."
-	tar xf linux-$KVER.tar.bz2
+	tar xf linux-$KVER.tar.xz
 }
 
 check_current_config() {
@@ -206,7 +206,19 @@ while [ $# -gt 0 ] ; do
 	shift
 done
 
+case $KVER in
+	latest)
+		info "Guessing latest stable kernel version ..."
+		KVER="$(wget -o/dev/null -O - 'http://www.kernel.org/' | \
+			sed -n '/stable:/{n;p;}' | head -n 1  | \
+			sed -rn 's/.*>([0-9.]+)<.*/\1/p' )"
+		export KVER
+	;;
+esac
+
 # Configure and build
+info "Building linux kernel version $KVER ..."
+
 install_build_dependencies
 fetch_kernel
 unpack_kernel
