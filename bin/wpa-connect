@@ -1,0 +1,82 @@
+#!/bin/bash
+
+# Disable network-manager, if running
+disable_network_manager() {
+	service network-manager stop
+}
+
+# Connects using ifup and wpa_supplicant
+wpa_connect() {
+	ifup wlan0=wificonnect \
+		-o wpa-psk="$2" \
+		-o wpa-ssid="$1"  \
+		--interfaces=<(echo "iface wificonnect inet dhcp")
+}
+
+wpa_disconnect() {
+	ifdown wlan0=wificonnect \
+		--interfaces=<(echo "iface wificonnect inet dhcp")
+}
+
+# Help
+usage() {
+	cat <<EOF
+$(basename $0) - cli wpa connection tool
+
+Usage
+$(basename $0) --ssid SSID --wpa-psk PASS --up
+$(basename $0) --down
+
+	--ssid
+		wifi SSID
+	--wpa-psk
+		WPA PSK passphrase
+	--up
+		brings interface up
+	--down
+		brings interface down
+
+EOF
+	exit 0
+}
+
+# Main
+SSID=
+PASS=
+COMMAND=
+while [ $# -gt 0 ] ; do
+	case $1 in
+		--ssid)
+			export SSID=$2
+			shift
+			;;
+		--wpa-psk)
+			export PASS=$2
+			shift
+			;;
+		--up)
+			export COMMAND="up"
+			;;
+		--down)
+			export COMMAND="down"
+			;;
+	esac
+	shift;
+done
+
+case $COMMAND in
+	up) 
+		if [ -z $SSID -o -z $PASS ] ; then
+			usage
+		fi
+		disable_network_manager
+		wpa_connect "$SSID" "$PASS"
+		;;
+	down)
+		wpa_disconnect
+		;;
+	*)
+		usage
+		;;
+esac
+
