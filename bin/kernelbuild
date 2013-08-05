@@ -119,8 +119,18 @@ safe_config() {
 # then makes all new/optional stuff as modules
 optimized_config() {
 	check_current_config
-	info "Performing an optimized configuration"
-	warn "*** Not implemented yet ***"
+	
+	info "Performing an optimized configuration. This is experimental!!!"
+	info "You should have all hardware you want to use pluged, so the current"
+	info "kernel will load the modules and they will be included in this build."
+
+	cp /boot/config-$( uname -r ) .config -v
+	make localmodconfig
+	info "Configuration done. Review linux-$KVER/config.new to see what was chosen."
+	
+	if confirm "Do you want to run make menuconfig to do manual settings?" ; then
+		make menuconfig
+	fi
 }
 
 local_version() {
@@ -163,6 +173,10 @@ Where OPTIONS can be:
 		"~custom" on kernel package revision
 	--safe-config
 		Try to safely configure the kernel
+	--optimal-config
+		Try to make an optimized kernel configuration.
+		You must have all modules loaded to help the configuration
+		guess the right modules to include.
 	--help
 		Prints this help and ext
 EOF
@@ -191,7 +205,10 @@ while [ $# -gt 0 ] ; do
 			info "Will perform safe-config"
 			export SAFE_CONFIG=true
 		;;
-
+		--optimized-config|--optimal-config)
+			info "Will perform optimized-config"
+			export OPTIMIZED_CONFIG=true
+		;;
 		--build-number|-b)
 			shift
 			info "Build number is $1"
@@ -226,5 +243,7 @@ unpack_kernel
 cd linux-$KVER
 if [ ! -z $SAFE_CONFIG ] ; then
 	safe_config
+elif [ ! -z $OPTIMIZED_CONFIG ] ; then
+	optimized_config
 fi
 build_packages
