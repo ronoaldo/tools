@@ -23,6 +23,7 @@ call vundle#rc()
 Bundle 'gmarik/vundle'
 Bundle 'snipMate'
 Bundle 'scrooloose/nerdtree'
+Bundle 'scrooloose/syntastic'
 Bundle 'taglist.vim'
 
 filetype plugin indent on
