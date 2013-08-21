@@ -24,7 +24,8 @@ Bundle 'gmarik/vundle'
 Bundle 'snipMate'
 Bundle 'scrooloose/nerdtree'
 Bundle 'scrooloose/syntastic'
-Bundle 'taglist.vim'
+Bundle 'majutsushi/tagbar'
+Bundle 'Townk/vim-autoclose'
 
 filetype plugin indent on
 
@@ -33,7 +34,7 @@ filetype plugin indent on
 " Configurações de tabulação
 " Tabs Normais
 fu! SetupNormalTabs()
-  set sw=8 ts=8 st=8 noet si ai
+  set sw=4 ts=4 st=4 noet si ai
 endfu
 " Tabs com 4 espaços
 fu! SetupSpaceTabs()
@@ -168,7 +169,6 @@ fu! MvnConfigureWorkspace()
   set makeprg=mvn\ -q\ -o\ test-compile\ -f\ ./pom.xml
   set errorformat=\[ERROR]\ %f:[%l\\,%v]\ %m
   set tags=~/workspace/.tags
-  let Tlist_Use_Right_Window = 1
 endfu
 
 " ********** Comandos **********
@@ -199,6 +199,7 @@ augroup filemapping
   au BufRead,BufNewFile Makefile call SetupNormalTabs()
   au BufRead,BufNewFile makefile call SetupNormalTabs()
   au BufRead,BufNewFile *.xml call SetupNormalTabs()
+  au BufRead,BufNewFile *.xml set shiftwidth=4 tabstop=4
   au FileType xml call SetupNormalTabs()
   au BufRead,BufNewFile *.txt call Setup2SpaceTabs()
   au BufRead,BufNewFile *.vimrc call Setup2SpaceTabs()
@@ -206,6 +207,7 @@ augroup filemapping
   au FileType vim call Setup2SpaceTabs()
   au BufRead,BufNewFile *.java compiler javac
   au BufRead,BufNewFile *.java set makeprg=javac\ %
+  au BufNewFile,BufRead *.java let g:syntastic_java_javac_options = "-Xlint -encoding utf-8"
 
   " Conveniencia para revisar o diff antes do commit
   au BufRead /tmp/hg-editor-* call HgDiff()
@@ -219,32 +221,34 @@ augroup workspace
   au!
   let s:workspace_init = 1
   autocmd BufNewFile,BufRead ~/workspace/* call MvnConfigureWorkspace()
+  " Configura o NERDTree auto/open auto/close
+  autocmd VimEnter * NERDTree
+  autocmd VimEnter * wincmd p
+  autocmd BufEnter * if (winnr("$") == 1 && exists("b:NERDTreeType") && b:NERDTreeType == "primary") | q | endif
 augroup END
 
 " ********** Atalhos do Teclado **********
 
 " Mapeia o CTRL+S para salvar o arquivo
 call KeyMap('<C-S>', ':update')
-" Mapeia o CTRL+X para fechar o arquivo
-call KeyMap("<C-X>", ":quitall")
+" Mapeia o \x para fechar o arquivo
+call KeyMap("<Leader>x", ":quitall")
 " Mapeamentos para o Mercurial
 call KeyMap("<C-U>", ":call HgPull()")
 call KeyMap("<C-P>", ":call HgPush()")
 " Mapeamentos para desenvolvimento Java
 call KeyMap("<C-F7>", ":Install")
+call KeyMap("<Leader>i", ":Install")
 call KeyMap("<C-F8>", ":Build")
+call KeyMap("<Leader>b", ":Build")
 call KeyMap("<C-F9>", ":Test")
+call KeyMap("<Leader>t",":Test")
 call KeyMap("<C-F10>", ":Debug")
 " Mapeamentos para navegador de tags/arquivos
 call KeyMap("<C-F11>", ":NERDTreeToggle")
-call KeyMap("<C-F12>", ":TlistToggle")
+call KeyMap("<C-F12>", ":TagbarToggle")
 " Mapeia o equivalente do Eclipse (CTRL+SHIFT+F) para ':normal gg=G'
 call KeyMap("<C-S-F>", ":normal gg=G")
-
-" Configura o fechamento automatico
-inoremap { {}<left>
-inoremap ( ()<left>
-inoremap [ []<left>
 
 " ********** Opções de genéricas **********
 
@@ -254,7 +258,7 @@ syntax on
 set modeline
 set modelines=5
 set nomousehide
-set wrap
+set nowrap
 set number
 set hlsearch
 set mouse=a
