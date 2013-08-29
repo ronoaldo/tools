@@ -1,0 +1,58 @@
+#!/bin/bash
+
+set -e
+
+M2DIR="$HOME/.m2"
+
+usage() {
+	cat <<EOF
+Use $(basename $0) --set suffix-or-name | --list
+EOF
+}
+
+fatal() {
+	echo "$@"
+	exit 1
+}
+
+list() {
+	echo "Available settings files:"
+	ls -1 $M2DIR/settings-*.xml | awk '{print "\t"$1}'
+}
+
+configure() {
+	settings="settings-$1.xml"
+	case $1 in
+		settings-*)
+			# Full name provided
+			settings="$1"
+		;;
+	esac
+
+	if [ ! -f "$M2DIR/$settings" ] ; then
+		fatal "Settings not found: '$settings' in $M2DIR"
+	fi
+
+	echo -n "Configuring $settings ... "
+	if [ -r "$M2DIR/settings.xml" ] ; then
+		if [ ! -L "$M2DIR/settings.xml" ] ; then
+			fatal "$M2DIR/settings.xml is not a symlink"
+		fi
+	fi
+
+	rm -vf $M2DIR/settings.xml
+	ln -s $M2DIR/$settings $M2DIR/settings.xml
+	echo "Done"
+}
+
+case $1 in
+	--help|-h)
+		usage
+	;;
+	--list)
+		list
+	;;
+	--set)
+		configure $2
+	;;
+esac		
