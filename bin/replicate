@@ -16,8 +16,7 @@
 
 # Logs a sample message and exists.
 log() {
-	echo
-	echo "[replicate] $*"
+	echo "[replicate] $@"
 }
 
 # Determines the local directories to enter and run
@@ -29,11 +28,11 @@ find_dirs() {
 # Replicate a command on direct chieldren of current
 # directory.
 replicate_cli() {
-	cmd="$*"
+	cmd="$@"
 	for d in $( find_dirs ) ; do
 		log "running \"$cmd\" in $d ... "
 		cd $d
-		$cmd || true
+		eval $cmd || true
 		cd ..
 	done
 }
@@ -66,14 +65,14 @@ EOF
 
 # Parses the first argument, if a special argument is given
 case $1 in
-	--no-fail-fast|--)
+	--no-fail-fast)
 		shift
 		;;
 	--help|-h)
 		usage
 		;;
 	rm|del|rmdir)
-		if ! confirm_cli "$*" ; then
+		if ! confirm_cli "$@" ; then
 			exit 1
 		fi
 		;;
@@ -82,9 +81,9 @@ case $1 in
 		;;
 esac
 
-if [ -z "$*" ] ; then
+if [ -z "$@" ] ; then
 	usage
 fi
 
 # Main
-replicate_cli "$*"
+replicate_cli $*
