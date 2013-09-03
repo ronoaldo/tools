@@ -26,6 +26,7 @@ Bundle 'scrooloose/nerdtree'
 Bundle 'scrooloose/syntastic'
 Bundle 'majutsushi/tagbar'
 Bundle 'Townk/vim-autoclose'
+Bundle "jnwhiteh/vim-golang"
 
 filetype plugin indent on
 
@@ -147,7 +148,7 @@ endfu
 fu! MvnIndexWorkspace()
   call Info("Indexing .tags file ...")
   let ctags = "!rm -vf ~/workspace/.tags && find ~/workspace/ -type f -iname '*.java' |"
-  let ctags = ctags . " xargs ctags -a -f ~/workspace/.tags  -L - --totals"
+  let ctags = ctags . " xargs ctags -a -f ~/workspace/.tags --exclude='*/target/*'  -L - --totals"
   execute ctags
 
   set tags=~/workspace/.tags
@@ -171,6 +172,15 @@ fu! MvnConfigureWorkspace()
   set tags=~/workspace/.tags
 endfu
 
+" Abre automaticamente o NERDTree
+let g:auto_open_file_browser = 0
+fu! AutoOpenNerdTree()
+  if g:auto_open_file_browser
+      NERDTree
+      wincmd p
+  endif
+endfu
+
 " ********** Comandos **********
 
 command! Review call HgDiff()
@@ -191,7 +201,7 @@ call SetupNormalTabs()
 augroup filemapping
   au!
   " Mapeamento de tipos de arquivo especiais
-  au BufRead,BufNewFile *.bsh set filetype=java
+  au BufReadPost,BufNewFile *.bsh set syntax=java
 
   " Mapeamento de tabs por tipos especiais de arquivos
   au BufRead,BufNewFile *.py call SetupSpaceTabs()
@@ -222,8 +232,7 @@ augroup workspace
   let s:workspace_init = 1
   autocmd BufNewFile,BufRead ~/workspace/* call MvnConfigureWorkspace()
   " Configura o NERDTree auto/open auto/close
-  autocmd VimEnter * NERDTree
-  autocmd VimEnter * wincmd p
+  autocmd VimEnter * call AutoOpenNerdTree()
   autocmd BufEnter * if (winnr("$") == 1 && exists("b:NERDTreeType") && b:NERDTreeType == "primary") | q | endif
 augroup END
 
