@@ -1,0 +1,50 @@
+#!/usr/bin/env python
+# Copyright 2013 Ronoaldo JLP (http://www.ronoaldo.net)
+# 
+#   Licensed under the Apache License, Version 2.0 (the 'License');
+#   you may not use this file except in compliance with the License.
+#   You may obtain a copy of the License at
+#
+#       http://www.apache.org/licenses/LICENSE-2.0
+#
+#   Unless required by applicable law or agreed to in writing, software
+#   distributed under the License is distributed on an 'AS IS' BASIS,
+#   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#   See the License for the specific language governing permissions and
+#   limitations under the License.
+
+import urllib
+import urllib2
+import json
+import sys
+
+USER_AGENT="Mozilla/5.0 (GeoCoding)"
+BASE_URL="https://maps.googleapis.com/maps/api/geocode/json?"
+BASE_URL+="sensor=false&components=locality:locality|country:BR&address=%s"
+
+def fetch_json(address):
+    """
+    Feches the JSON data from Google Maps API
+    """
+    headers = {"User-Agent" : USER_AGENT }
+    url =  BASE_URL % urllib.quote(address)
+    req = urllib2.Request(url, headers=headers)
+    resp =  urllib2.urlopen(req)
+    return resp.read()
+
+def parse_lat_long(resp):
+    """
+    Parses the lat/lng attributes of the result JSON, and
+    returns as a tuple.
+    """
+    result = json.loads(resp)
+    location = result["results"][0]["geometry"]["location"]
+    return location["lat"], location["lng"]
+
+if __name__ == "__main__":
+    if "--json" in sys.argv:
+        resp = fetch_json(" ".join(sys.argv[2:]))
+        print resp
+    else:
+        resp = fetch_json(" ".join(sys.argv[1:]))
+    print parse_lat_long(resp)
