@@ -81,7 +81,7 @@ case $1 in
 		;;
 esac
 
-if [ -z "$@" ] ; then
+if [ -z "$1" ] ; then
 	usage
 fi
 
