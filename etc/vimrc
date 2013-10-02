@@ -117,17 +117,6 @@ fu! MvnInstall()
   0
 endfu
 
-" Maven find project directory
-fu! MvnMoveToProjectDir()
-  let l:pom = findfile("pom.xml", ";")
-  if filereadable(l:pom)
-    let l:project = fnamemodify(l:pom, ":h")
-    execute "cd " . l:project
-  else
-    cd <afile>:~:s?\~/workspace/\([^/]\+\)/.*?\~/workspace/\1?
-  endif
-endfu
-
 " Maven JUnit
 fu! MvnSurefireForCurrentFile()
   let unit_test = expand('%:t:r')
@@ -163,13 +152,17 @@ fu! StartJdb(port)
   execute jdb
 endfu
 
-" Configura a workspace
+" Configura a workspace para uso com Maven, caso encontre o arquivo pom.xml
 fu! MvnConfigureWorkspace()
-  call MvnMoveToProjectDir()
-  compiler ant
-  set makeprg=mvn\ -q\ -o\ test-compile\ -f\ ./pom.xml
-  set errorformat=\[ERROR]\ %f:[%l\\,%v]\ %m
-  set tags=~/workspace/.tags
+  let l:pom = findfile("pom.xml", ";")
+  if filereadable(l:pom)
+    let l:project = fnamemodify(l:pom, ":h")
+    execute "cd " . l:project
+    compiler ant
+    set makeprg=mvn\ -q\ -o\ test-compile\ -f\ ./pom.xml
+    set errorformat=\[ERROR]\ %f:[%l\\,%v]\ %m
+    set tags=~/workspace/.tags
+  endif
 endfu
 
 " Abre automaticamente o NERDTree
@@ -204,17 +197,24 @@ augroup filemapping
   au BufReadPost,BufNewFile *.bsh set syntax=java
 
   " Mapeamento de tabs por tipos especiais de arquivos
+  " Python
   au BufRead,BufNewFile *.py call SetupSpaceTabs()
   au FileType python call SetupSpaceTabs()
+  " Makefiles
   au BufRead,BufNewFile Makefile call SetupNormalTabs()
   au BufRead,BufNewFile makefile call SetupNormalTabs()
+  " XML
   au BufRead,BufNewFile *.xml call SetupNormalTabs()
   au BufRead,BufNewFile *.xml set shiftwidth=4 tabstop=4
   au FileType xml call SetupNormalTabs()
+  au FileType xml set shiftwidth=4 tabstop=4
+  " TXT
   au BufRead,BufNewFile *.txt call Setup2SpaceTabs()
+  " Vim
   au BufRead,BufNewFile *.vimrc call Setup2SpaceTabs()
   au BufRead,BufNewFile vimrc call Setup2SpaceTabs()
   au FileType vim call Setup2SpaceTabs()
+  " Java
   au BufRead,BufNewFile *.java compiler javac
   au BufRead,BufNewFile *.java set makeprg=javac\ %
   au BufNewFile,BufRead *.java let g:syntastic_java_javac_options = "-Xlint -encoding utf-8"
@@ -230,7 +230,7 @@ augroup END
 augroup workspace
   au!
   let s:workspace_init = 1
-  autocmd BufNewFile,BufRead ~/workspace/* call MvnConfigureWorkspace()
+  autocmd BufNewFile,BufRead * call MvnConfigureWorkspace()
   " Configura o NERDTree auto/open auto/close
   autocmd VimEnter * call AutoOpenNerdTree()
   autocmd BufEnter * if (winnr("$") == 1 && exists("b:NERDTreeType") && b:NERDTreeType == "primary") | q | endif
