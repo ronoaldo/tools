@@ -32,7 +32,11 @@ class MavenCentralSearch(object):
         url = self.SOLR % {"terms" : (" ").join(terms) }
         result = json.load(urllib.urlopen(url))
         for doc in result['response']['docs']:
-            print "%s:%s:%s" % (doc['g'], doc['a'], doc['latestVersion'])
+            try:
+                version = doc['latestVersion']
+            except KeyError:
+                version = doc['v']
+            print "%s:%s:%s" % (doc['g'], doc['a'], version)
 
     def run(self, *args):
         self.search(*args)

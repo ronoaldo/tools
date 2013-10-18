@@ -17,7 +17,9 @@ fatal() {
 
 list() {
 	echo "Available settings files:"
-	ls -1 $M2DIR/settings-*.xml | awk '{print "\t"$1}'
+	ls -1 $M2DIR/settings-*.xml | grep -v 'settings-security.xml' | awk '{print "\t"$1}'
+	echo -n "Current settings: "
+	ls $M2DIR/settings.xml
 }
 
 configure() {
