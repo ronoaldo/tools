@@ -25,7 +25,6 @@ Bundle 'snipMate'
 Bundle 'scrooloose/nerdtree'
 Bundle 'scrooloose/syntastic'
 Bundle 'majutsushi/tagbar'
-Bundle 'Townk/vim-autoclose'
 Bundle "jnwhiteh/vim-golang"
 
 filetype plugin indent on
