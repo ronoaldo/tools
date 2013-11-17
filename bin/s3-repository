@@ -1,0 +1,241 @@
+#!/bin/bash
+# Copyright 2013 Ronoaldo JLP (http://www.ronoaldo.net)
+# 
+#   Licensed under the Apache License, Version 2.0 (the 'License');
+#   you may not use this file except in compliance with the License.
+#   You may obtain a copy of the License at
+#
+#       http://www.apache.org/licenses/LICENSE-2.0
+#
+#   Unless required by applicable law or agreed to in writing, software
+#   distributed under the License is distributed on an 'AS IS' BASIS,
+#   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#   See the License for the specific language governing permissions and
+#   limitations under the License.
+
+###################
+# S3 Debian Repository Management Tool
+###################
+set -e
+
+# Script defaults - All them can be overriden at $HOME/.s3-repository or
+# system-wide, at /etc/s3-repository
+export REPODIR="/var/lib/s3-repository"
+export INCOMING="/var/cache/s3-repository"
+export BUCKET_NAME=""
+
+# Load configuration
+[ -r $HOME/.s3-repository ] && . $HOME/.s3-repository
+[ -r /etc/s3-repository ] && . /etc/s3-repository
+
+# TODO: Allow multiple distributions/archs
+export DIST="unstable"
+export ARCHS="amd64 i386 source"
+# TODO: Validate what the Version field mean on conf/distributions
+export VERSION="7.2"
+
+# Terminates execution with exit status 1, after display the given
+# message.
+die() {
+    echo "$@"
+    exit 1
+}
+
+# Validates initial configuration
+check_configuration() {
+    [ -w $REPODIR ] || die "REPODIR=$REPODIR not writable"
+    [ -w $INCOMING ] || die "INCOMING=$INCOMING not writable"
+    [ -z $BUCKET_NAME ] || die "BUCKET_NAME is empty"
+}
+
+# Configure the repository locally, and the S3 cache
+configure_repository() {
+    if [ ! -r $REPODIR ] ; then
+        mkdir -p $REPODIR/conf
+        mkdir -p $INCOMING
+        
+        d="$REPODIR/conf/distributions"
+        echo "Suite: $DIST" > $d
+        echo "Codename: $DIST" >> $d
+        echo "Components: main contrib non-free" >> $d
+        echo "Version: $VERSION" >> $d
+        echo "Architectures: $ARCH" >> $d
+        echo >> $d
+    fi
+
+    export_indexes
+
+    if [ ! -r $HOME/.s3cfg ] ; then
+        s3cmd --configure
+    fi
+    if ! s3cmd info s3://$BUCKET_NAME/ ; then
+        s3cmd mb s3://$BUCKET_NAME
+    fi
+    
+    sync_repo
+}
+
+# Includes a package in the repository
+# @param 1 the .changes file of the package
+include_package() {
+    changes="$(readlink -f $1)"
+    cd $REPODIR
+    reprepro --ignore=wrongdistribution -Vb $REPODIR include $DIST $changes
+    cd -
+}
+
+# Removes a package in the repository
+# @param 1 the package name to be removed
+remove_package() {
+    echo "Removendo $1 ..."
+    cd $REPODIR
+    reprepro --ignore=wrongdistribution -Vb $REPODIR remove $DIST $1
+    cd -
+}
+
+export_indexes() {
+    echo "Exporting indexes ..."
+    cd $REPODIR
+    reprepro --ignore=wrongdistribution -Vb $REPODIR export $DIST
+    cd -
+}
+
+# Process the incoming directory and includes all packages found.
+process_incoming() {
+    cd $REPODIR
+    found=0
+    for i in $INCOMING/*.chages; do
+        found=`expr $found + 1`
+    done
+
+    if [ "$found" -lt 1 ]; then
+        echo "No new packages found ..."
+        cd -
+        exit
+    fi
+
+    echo "Found $found packages ..."
+
+    #
+    #  Now import each new package that we *did* find
+    #
+    for i in $INCOMING/*.changes; do
+        echo -e "\tprocessing $i ..."
+        #Import package to 'sarge' distribution.
+        include_package $i
+
+        # Delete the referenced files
+        sed '1,/Files:/d' $i | sed '/BEGIN PGP SIGNATURE/,$d' \
+            | while read MD SIZE SECTION PRIORITY NAME; do
+            if [ -z "$NAME" ]; then
+                continue
+            fi
+
+            #
+            #  Delete the referenced file
+            #
+            if [ -f "$INCOMING/$NAME" ]; then
+                rm "$INCOMING/$NAME"  || exit 1
+            fi
+        done
+        
+        # Finally delete the .changes file itself.
+        rm $i
+        # Remove .build files too ...
+        rm -vf ${i/changes/build}
+    done
+    cd -
+}
+
+# Synchronize the local repository with the configured S3 Bucket
+sync_repo() {
+    s3cmd --verbose --acl-public sync $REPODIR/ s3://$BUCKET_NAME/debian/
+}
+
+remote_purge() {
+    s3cmd --verbose --acl-public --delete-removed sync $REPODIR/ s3://$BUCKET_NAME/debian/
+}
+
+usage() {
+    cat <<EOF
+$(basename $0) - Debian Repository on S3 (version $VERSION)
+
+Usage $(basename 0) [OPTIONS]
+
+OPTIONS can be one of:
+
+    --configure
+        Configures the S3 repository with the configured
+        parameters
+   
+    --export)
+        Export the package indexes
+       
+    -i|--include ".changes file"
+        Includes the package specified in the .changes file
+
+    --incoming
+        Process the incoming directory
+
+    -r|--remove package
+        Removes package from repository
+
+    -s|--sync
+        Synchronize the S3 bucket with the local repository
+            (local=$REPODIR => bucket=$BUCKET_NAME)
+
+    -p|--purge-remote
+        Like --sync, but removes files on remote server
+        that aren't present locally. Use with caution!
+
+EOF
+}
+
+###################
+# Main
+###################
+
+argc="$#"
+if [ $argc -le 0 ]; then
+    usage
+    exit 1
+fi
+
+argv="$*"
+
+while [ $# -gt 0 ] ; do
+    option="$1"
+    shift
+    case "$option" in
+        --configure)
+            configure_repository
+        ;;
+        -i|--include)
+            package="$1"
+            shift
+            echo "Including package $1"
+            include_package $package
+        ;;
+
+        -r|--remove)
+            package="$1"
+            shift
+            echo "Removing package $1"
+            remove_package $package
+        ;;
+
+        --incoming)
+            echo "Processing incoming at '$INCOMING' ..."
+            process_incoming
+        ;;
+
+        --export)
+            export_indexes
+        ;;
+
+        *)
+            echo "Unknown option: '$option'"
+            usage
+        ;;
+    esac
+done
