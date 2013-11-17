@@ -20,19 +20,20 @@ set -e
 
 # Script defaults - All them can be overriden at $HOME/.s3-repository or
 # system-wide, at /etc/s3-repository
-export REPODIR="/var/lib/s3-repository"
-export INCOMING="/var/cache/s3-repository"
+export REPODIR="/var/tmp/s3-repository/debian"
+export INCOMING="/var/tmp/s3-repository/incoming"
 export BUCKET_NAME=""
+export SIGN_KEY=""
 
 # Load configuration
 [ -r $HOME/.s3-repository ] && . $HOME/.s3-repository
 [ -r /etc/s3-repository ] && . /etc/s3-repository
 
 # TODO: Allow multiple distributions/archs
-export DIST="unstable"
+export DIST="wheezy"
 export ARCHS="amd64 i386 source"
 # TODO: Validate what the Version field mean on conf/distributions
-export VERSION="7.2"
+export VERSION="1.0"
 
 # Terminates execution with exit status 1, after display the given
 # message.
@@ -51,15 +52,27 @@ check_configuration() {
 # Configure the repository locally, and the S3 cache
 configure_repository() {
     if [ ! -r $REPODIR ] ; then
-        mkdir -p $REPODIR/conf
+        mkdir -p $REPODIR/{conf,keys,pool}
         mkdir -p $INCOMING
         
         d="$REPODIR/conf/distributions"
+        o="$REPODIR/conf/options"
+
         echo "Suite: $DIST" > $d
         echo "Codename: $DIST" >> $d
         echo "Components: main contrib non-free" >> $d
         echo "Version: $VERSION" >> $d
         echo "Architectures: $ARCH" >> $d
+        
+        echo "verbose" > $o
+        echo "basedir $REPODIR" >> $o
+
+        if [ -n $SIGN_KEY ] ; then
+            echo "SignWith: $SIGN_KEY" >> $d
+            gpg --armor --export "$SIGN_KEY" >> "$REPODIR/keys/$SIGN_KEY.key"
+            echo "ask-passphrase" >> $o
+        fi
+
         echo >> $d
     fi
 
@@ -80,7 +93,7 @@ configure_repository() {
 include_package() {
     changes="$(readlink -f $1)"
     cd $REPODIR
-    reprepro --ignore=wrongdistribution -Vb $REPODIR include $DIST $changes
+    reprepro --ignore=wrongdistribution include $DIST $changes
     cd -
 }
 
@@ -89,14 +102,14 @@ include_package() {
 remove_package() {
     echo "Removendo $1 ..."
     cd $REPODIR
-    reprepro --ignore=wrongdistribution -Vb $REPODIR remove $DIST $1
+    reprepro --ignore=wrongdistribution remove $DIST $1
     cd -
 }
 
 export_indexes() {
     echo "Exporting indexes ..."
     cd $REPODIR
-    reprepro --ignore=wrongdistribution -Vb $REPODIR export $DIST
+    reprepro --ignore=wrongdistribution export $DIST
     cd -
 }
 
@@ -121,7 +134,7 @@ process_incoming() {
     #
     for i in $INCOMING/*.changes; do
         echo -e "\tprocessing $i ..."
-        #Import package to 'sarge' distribution.
+        # Import the package
         include_package $i
 
         # Delete the referenced files
@@ -141,7 +154,7 @@ process_incoming() {
         
         # Finally delete the .changes file itself.
         rm $i
-        # Remove .build files too ...
+        # Remove .build files, if any.
         rm -vf ${i/changes/build}
     done
     cd -
@@ -152,7 +165,9 @@ sync_repo() {
     s3cmd --verbose --acl-public sync $REPODIR/ s3://$BUCKET_NAME/debian/
 }
 
-remote_purge() {
+# Synchronize the local repository with the remote S3 bucket,
+# purging deleted files.
+purge_repo() {
     s3cmd --verbose --acl-public --delete-removed sync $REPODIR/ s3://$BUCKET_NAME/debian/
 }
 
@@ -210,6 +225,7 @@ while [ $# -gt 0 ] ; do
         --configure)
             configure_repository
         ;;
+        
         -i|--include)
             package="$1"
             shift
@@ -231,6 +247,14 @@ while [ $# -gt 0 ] ; do
 
         --export)
             export_indexes
+        ;;
+
+        --sync)
+            sync_repo
+        ;;
+        
+        --purge)
+            purge_repo
         ;;
 
         *)
