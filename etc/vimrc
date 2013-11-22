@@ -53,10 +53,12 @@ fu! Info(msg)
 endfu
 
 " Mapeamento de atalhos conveniente
-fu! KeyMap(key, action)
+fu! KeyMap(key, action, insert_mode)
   execute "noremap  <silent> " . a:key . " " . a:action . "<CR>"
   execute "vnoremap <silent> " . a:key . " <C-C>" . a:action . "<CR>"
-  execute "inoremap <silent> " . a:key . " <C-O>" . a:action . "<CR>"
+  if a:insert_mode
+    execute "inoremap <silent> " . a:key . " <C-O>" . a:action . "<CR>"
+  endif
 endfu
 
 " Abre uma janela temprária, opcionalmente limpando
@@ -238,25 +240,28 @@ augroup END
 " ********** Atalhos do Teclado **********
 
 " Mapeia o CTRL+S para salvar o arquivo
-call KeyMap('<C-S>', ':update')
+call KeyMap('<C-S>', ':update', 1)
 " Mapeia o \x para fechar o arquivo
-call KeyMap("<Leader>x", ":quitall")
+call KeyMap("<Leader>x", ":quitall", 0)
 " Mapeamentos para o Mercurial
-call KeyMap("<C-U>", ":call HgPull()")
-call KeyMap("<C-P>", ":call HgPush()")
+call KeyMap("<C-U>", ":call HgPull()", 1)
+call KeyMap("<C-P>", ":call HgPush()", 1)
 " Mapeamentos para desenvolvimento Java
-call KeyMap("<C-F7>", ":Install")
-call KeyMap("<Leader>i", ":Install")
-call KeyMap("<C-F8>", ":Build")
-call KeyMap("<Leader>b", ":Build")
-call KeyMap("<C-F9>", ":Test")
-call KeyMap("<Leader>t",":Test")
-call KeyMap("<C-F10>", ":Debug")
+call KeyMap("<C-F7>", ":Install", 1)
+call KeyMap("<Leader>i", ":Install", 0)
+call KeyMap("<C-F8>", ":Build", 1)
+call KeyMap("<Leader>b", ":Build", 0)
+call KeyMap("<C-F9>", ":Test", 1)
+call KeyMap("<Leader>t",":Test", 0)
+call KeyMap("<C-F10>", ":Debug", 1)
 " Mapeamentos para navegador de tags/arquivos
-call KeyMap("<C-F11>", ":NERDTreeToggle")
-call KeyMap("<C-F12>", ":TagbarToggle")
+call KeyMap("<C-F11>", ":NERDTreeToggle", 1)
+call KeyMap("<C-F12>", ":TagbarToggle", 1)
 " Mapeia o equivalente do Eclipse (CTRL+SHIFT+F) para ':normal gg=G'
-call KeyMap("<C-S-F>", ":normal gg=G")
+call KeyMap("<C-S-F>", ":normal gg=G", 1)
+call KeyMap("<Leader>f", ":normal gg=G", 0)
+" Alternativa para mudar de janelas, quando o CTRL+W não poder ser usado
+call KeyMap("<Leader>w",":wincmd W", 0)
 
 " ********** Opções de genéricas **********
 
