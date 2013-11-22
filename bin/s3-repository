@@ -19,20 +19,25 @@
 set -e
 
 # Script defaults - All them can be overriden at $HOME/.s3-repository or
-# system-wide, at /etc/s3-repository
-export REPODIR="/var/tmp/s3-repository/debian"
-export INCOMING="/var/tmp/s3-repository/incoming"
-export BUCKET_NAME=""
-export SIGN_KEY=""
 
-# Load configuration
+# Repository directory
+export REPODIR="/var/tmp/s3-repository/debian"
+# Incomiing directory
+export INCOMING="/var/tmp/s3-repository/incoming"
+# S3 bucket name
+export BUCKET_NAME=""
+# GPG key ID to sign the repository
+export SIGN_KEY=""
+# Default distribution
+export DIST="unstable"
+# Distributions available
+export DISTS="$DIST"
+
+# User defined configurations
 [ -r $HOME/.s3-repository ] && . $HOME/.s3-repository
 [ -r /etc/s3-repository ] && . /etc/s3-repository
 
-# TODO: Allow multiple distributions/archs
-export DIST="wheezy"
 export ARCHS="amd64 i386 source"
-# TODO: Validate what the Version field mean on conf/distributions
 export VERSION="1.0"
 
 # Terminates execution with exit status 1, after display the given
@@ -51,30 +56,34 @@ check_configuration() {
 
 # Configure the repository locally, and the S3 cache
 configure_repository() {
-    if [ ! -r $REPODIR ] ; then
-        mkdir -p $REPODIR/{conf,keys,pool}
-        mkdir -p $INCOMING
-        
-        d="$REPODIR/conf/distributions"
-        o="$REPODIR/conf/options"
+    mkdir -p $REPODIR/{conf,keys,pool}
+    mkdir -p $INCOMING
+    
+    d="$REPODIR/conf/distributions"
+    o="$REPODIR/conf/options"
 
-        echo "Suite: $DIST" > $d
-        echo "Codename: $DIST" >> $d
+    echo "verbose" > $o
+    echo "basedir $REPODIR" >> $o
+    echo "ask-passphrase" >> $o
+
+    if [ -n $SIGN_KEY ] ; then
+       gpg --armor --export "$SIGN_KEY" >> "$REPODIR/keys/$SIGN_KEY.key"
+    fi
+    
+    > $d
+    for dist in $DISTS ; do
+        echo "Suite: $dist" >> $d
+        echo "Codename: $dist" >> $d
         echo "Components: main contrib non-free" >> $d
         echo "Version: $VERSION" >> $d
-        echo "Architectures: $ARCH" >> $d
+        echo "Architectures: $ARCHS" >> $d
         
-        echo "verbose" > $o
-        echo "basedir $REPODIR" >> $o
-
         if [ -n $SIGN_KEY ] ; then
             echo "SignWith: $SIGN_KEY" >> $d
-            gpg --armor --export "$SIGN_KEY" >> "$REPODIR/keys/$SIGN_KEY.key"
-            echo "ask-passphrase" >> $o
         fi
 
         echo >> $d
-    fi
+    done
 
     export_indexes
 
@@ -91,9 +100,17 @@ configure_repository() {
 # Includes a package in the repository
 # @param 1 the .changes file of the package
 include_package() {
-    changes="$(readlink -f $1)"
+    file="$(readlink -f $1)"
     cd $REPODIR
-    reprepro --ignore=wrongdistribution include $DIST $changes
+    case $file in
+        *.changes)
+            dist="$( grep 'Distribution:' "$file" | awk '{print $2}')"
+            reprepro include $dist $file
+            ;;
+        *.deb)
+            reprepro includedeb $DIST $changes
+            ;;
+    esac
     cd -
 }
 
@@ -102,14 +119,16 @@ include_package() {
 remove_package() {
     echo "Removendo $1 ..."
     cd $REPODIR
-    reprepro --ignore=wrongdistribution remove $DIST $1
+    reprepro remove $DIST $1
     cd -
 }
 
 export_indexes() {
     echo "Exporting indexes ..."
     cd $REPODIR
-    reprepro --ignore=wrongdistribution export $DIST
+	for dist in $DISTS; do
+	    reprepro export $dist
+	done
     cd -
 }
 
