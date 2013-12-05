@@ -262,6 +262,9 @@ call KeyMap("<C-S-F>", ":normal gg=G", 1)
 call KeyMap("<Leader>f", ":normal gg=G", 0)
 " Alternativa para mudar de janelas, quando o CTRL+W não poder ser usado
 call KeyMap("<Leader>w",":wincmd W", 0)
+" Redimensiona a janela usando leader+ e leader-
+call KeyMap("<Leader>+",":exe \"vertical resize \" . (winheight(0) * 3/2)<CR>", 0)
+call KeyMap("<Leader>-",":exe \"vertical resize \" . (winheight(0) * 2/3)<CR>", 0)
 
 " ********** Opções de genéricas **********
 
