@@ -10,22 +10,39 @@
 "
 
 " Instalação:
-" $ wget http://code.ronoaldo.net/ronoaldo-utils/raw/tip/etc/vimrc -O ~/.vim/plugin/rono.vim
-" $ git clone https://github.com/gmarik/vundle.git ~/.vim/bundle/vundle
-" $ vim +BundleInstall +qall
+" $ wget http://code.ronoaldo.net/ronoaldo-utils/raw/tip/etc/vimrc -O ~/.vimrc
 
 " ********** Gestão de Plugins **********
 filetype off
 
+" ********** Auto-instalacao do Vundle **********
+" Ref: http://www.erikzaadi.com/2012/03/19/auto-installing-vundle-from-your-vimrc/  
+let g:vundle_installed=1
+let vundle_readme=expand('~/.vim/bundle/vundle/README.md')
+if !filereadable(vundle_readme)
+  echo "Installing Vundle..."
+  echo ""
+  silent !mkdir ~/.vim/bundle
+  silent !git clone https://github.com/gmarik/vundle.git ~/.vim/bundle/vundle
+  let g:vundle_installed=0
+endif
+
 set runtimepath+=~/.vim/bundle/vundle/
 call vundle#rc()
 
+" Plugins
 Bundle 'gmarik/vundle'
 Bundle 'snipMate'
 Bundle 'scrooloose/nerdtree'
 Bundle 'scrooloose/syntastic'
 Bundle 'majutsushi/tagbar'
 Bundle "jnwhiteh/vim-golang"
+
+if g:vundle_installed == 0
+  echo "Installing Bundles. Please ignore key map erro"
+  echo ""
+  :BundleInstall
+endif
 
 filetype plugin indent on
 
