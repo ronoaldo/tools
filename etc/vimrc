@@ -192,6 +192,17 @@ fu! AutoOpenNerdTree()
   endif
 endfu
 
+" Exuberant Ctags for current directory/project
+fu! IndexProject()
+  call Info("Indexing current directory ...")
+  let ctags = "!rm -vf ./.tags && find ./ -type f |"
+  let ctags = ctags . " xargs ctags -a -f ./.tags --exclude='*/target/*' --exclude='*min.js' -L - --totals"
+  execute ctags
+
+  set tags=./.tags;
+  echo "Tag path " . &tags
+endfu
+
 " ********** Comandos **********
 
 command! Review call HgDiff()
