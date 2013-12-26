@@ -1,0 +1,26 @@
+#!/bin/bash
+
+backup="$HOME/backup/nitrous-io-$(date +%Y%m%d-%H%M%S).tar.bz2"
+
+cd $HOME
+tar cjf "$backup" ./ \
+	--exclude='./.go/*' \
+	--exclude='./.google_appengine/*' \
+	--exclude='./.m2/repository/*' \
+	--exclude='./backup/*' \
+	--exclude='./bash_history' \
+	--exclude='./.cache*' \
+	--exclude='./temp/*' \
+	--exclude='./.parts/' \
+	--exclude='./.ssh*' \
+	--exclude='./.pip*'
+
+if [ -r $HOME/.nitrous-io-backup.cfg ] ; then
+	. $HOME/.nitrous-io-backup.cfg
+	s3put -a "$NITROUS_BACKUP_KEY" -s "$NITROUS_BACKUP_SECRET" \
+		--bucket="$NITROUS_BACKUP_BUCKET" \
+		--prefix="$HOME/backup/" --key_prefix="/backup/" \
+		$backup && rm -f $backup
+else
+	echo "Not uploading to S3: missing $HOME/.nitrous-io-backup.cfg"
+fi
