@@ -37,6 +37,9 @@ Bundle 'scrooloose/nerdtree'
 Bundle 'scrooloose/syntastic'
 Bundle 'majutsushi/tagbar'
 Bundle "jnwhiteh/vim-golang"
+Bundle "groenewege/vim-less"
+Bundle "https://bitbucket.org/ronoaldo/custom-vim-snippets"
+Bundle "velocity.vim"
 
 if g:vundle_installed == 0
   echo "Installing Bundles. Please ignore key map erro"
@@ -51,15 +54,15 @@ filetype plugin indent on
 " Configurações de tabulação
 " Tabs Normais
 fu! SetupNormalTabs()
-  set sw=4 ts=4 st=4 noet si ai
+  setlocal sw=4 ts=4 st=4 noet si ai
 endfu
 " Tabs com 4 espaços
 fu! SetupSpaceTabs()
-  set sw=4 ts=4 st=4 et si ai
+  setlocal sw=4 ts=4 st=4 et si ai
 endfu
 " Tabs com 2 espaços
 fu! Setup2SpaceTabs()
-  set sw=2 ts=2 st=2 et si ai
+  setlocal sw=2 ts=2 st=2 et si ai
 endfu
 
 " ********** Funções Auxiliares **********
@@ -158,7 +161,7 @@ fu! MvnIndexWorkspace()
   let ctags = ctags . " xargs ctags -a -f ~/workspace/.tags --exclude='*/target/*'  -L - --totals"
   execute ctags
 
-  set tags=~/workspace/.tags
+  setlocal tags=./.tags;
   echo "Tag path: " . &tags
 endfu
 
@@ -177,9 +180,9 @@ fu! MvnConfigureWorkspace()
     let l:project = fnamemodify(l:pom, ":h")
     execute "cd " . l:project
     compiler ant
-    set makeprg=mvn\ -q\ -o\ test-compile\ -f\ ./pom.xml
-    set errorformat=\[ERROR]\ %f:[%l\\,%v]\ %m
-    set tags=~/workspace/.tags
+    setlocal makeprg=mvn\ -q\ -o\ test-compile\ -f\ ./pom.xml
+    setlocal errorformat=\[ERROR]\ %f:[%l\\,%v]\ %m
+    setlocal tags=./.tags;
   endif
 endfu
 
@@ -199,7 +202,7 @@ fu! IndexProject()
   let ctags = ctags . " xargs ctags -a -f ./.tags --exclude='*/target/*' --exclude='*min.js' -L - --totals"
   execute ctags
 
-  set tags=./.tags;
+  setlocal tags=./.tags;
   echo "Tag path " . &tags
 endfu
 
@@ -256,7 +259,7 @@ call SetupNormalTabs()
 augroup filemapping
   au!
   " Mapeamento de tipos de arquivo especiais
-  au BufReadPost,BufNewFile *.bsh set syntax=java
+  au BufReadPost,BufNewFile *.bsh setlocal syntax=java
 
   " Mapeamento de tabs por tipos especiais de arquivos
   " Python
@@ -267,9 +270,9 @@ augroup filemapping
   au BufRead,BufNewFile makefile call SetupNormalTabs()
   " XML
   au BufRead,BufNewFile *.xml call SetupNormalTabs()
-  au BufRead,BufNewFile *.xml set shiftwidth=4 tabstop=4
+  au BufRead,BufNewFile *.xml setlocal shiftwidth=4 tabstop=4
   au FileType xml call SetupNormalTabs()
-  au FileType xml set shiftwidth=4 tabstop=4
+  au FileType xml setlocal shiftwidth=4 tabstop=4
   " TXT
   au BufRead,BufNewFile *.txt call Setup2SpaceTabs()
   " Vim
@@ -278,7 +281,7 @@ augroup filemapping
   au FileType vim call Setup2SpaceTabs()
   " Java
   au BufRead,BufNewFile *.java compiler javac
-  au BufRead,BufNewFile *.java set makeprg=javac\ %
+  au BufRead,BufNewFile *.java setlocal makeprg=javac\ %
   au BufNewFile,BufRead *.java let g:syntastic_java_javac_options = "-Xlint -encoding utf-8"
 
   " Conveniencia para revisar o diff antes do commit
