@@ -296,11 +296,13 @@ augroup filemapping
   au BufRead,BufNewFile makefile call SetupNormalTabs()
   " XML
   au BufRead,BufNewFile *.xml call SetupNormalTabs()
-  au BufRead,BufNewFile *.xml setlocal shiftwidth=4 tabstop=4
+  au BufRead,BufNewFile *.xml setlocal shiftwidth=2 tabstop=2
   au FileType xml call SetupNormalTabs()
-  au FileType xml setlocal shiftwidth=4 tabstop=4
+  au FileType xml setlocal shiftwidth=2 tabstop=2
   " TXT
   au BufRead,BufNewFile *.txt call Setup2SpaceTabs()
+  " Velocity
+  au BufRead,BufNewFile *.vm set filetype=velocity
   " Vim
   au BufRead,BufNewFile *.vimrc call Setup2SpaceTabs()
   au BufRead,BufNewFile vimrc call Setup2SpaceTabs()
@@ -329,21 +331,18 @@ augroup END
 
 " ********** Atalhos do Teclado **********
 
-" Mapeia o CTRL+S para salvar o arquivo
-call KeyMap('<C-S>', ':update', 1)
+" Mapeia o \s para salvar o arquivo
+call KeyMap('<Leader>s', ':update', 0)
 " Mapeia o \x para fechar o arquivo
 call KeyMap("<Leader>x", ":quitall", 0)
 " Mapeamentos para o Mercurial
-call KeyMap("<C-U>", ":call HgPull()", 1)
-call KeyMap("<C-P>", ":call HgPush()", 1)
-" Mapeamentos para desenvolvimento Java
-call KeyMap("<C-F7>", ":Install", 1)
+call KeyMap("<Leader>d", ":Debug", 1)
+call KeyMap("<Leader>u", ":call HgPull()", 1)
+call KeyMap("<Leader>p", ":call HgPush()", 1)
+" Mapeamentos para desenvolvimento Java/Maven
 call KeyMap("<Leader>i", ":Install", 0)
-call KeyMap("<C-F8>", ":Build", 1)
 call KeyMap("<Leader>b", ":Build", 0)
-call KeyMap("<C-F9>", ":Test", 1)
-call KeyMap("<Leader>t",":Test", 0)
-call KeyMap("<C-F10>", ":Debug", 1)
+call KeyMap("<Leader>t", ":Test", 0)
 " Mapeamentos para navegador de tags/arquivos
 call KeyMap("<C-F11>", ":NERDTreeToggle", 1)
 call KeyMap("<C-F12>", ":TagbarToggle", 1)
@@ -351,10 +350,12 @@ call KeyMap("<C-F12>", ":TagbarToggle", 1)
 call KeyMap("<C-S-F>", ":normal gg=G", 1)
 call KeyMap("<Leader>f", ":normal gg=G", 0)
 " Alternativa para mudar de janelas, quando o CTRL+W não poder ser usado
-call KeyMap("<Leader>w",":wincmd W", 0)
+call KeyMap("<Leader>w", ":wincmd W", 0)
 " Redimensiona a janela usando leader+ e leader-
-call KeyMap("<Leader>+",":exe \"vertical resize \" . (winheight(0) * 3/2)<CR>", 0)
-call KeyMap("<Leader>-",":exe \"vertical resize \" . (winheight(0) * 2/3)<CR>", 0)
+call KeyMap("<Leader>+", ":exe \"vertical resize \" . (winheight(0) * 3/2)<CR>", 0)
+call KeyMap("<Leader>-", ":exe \"vertical resize \" . (winheight(0) * 2/3)<CR>", 0)
+" Omnicomplete
+inoremap <Leader>, <C-X><C-O>
 
 " ********** Opções de genéricas **********
 
