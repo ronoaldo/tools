@@ -15,7 +15,7 @@
 " ********** Gestão de Plugins **********
 filetype off
 
-" ********** Auto-instalacao do Vundle **********
+" ********** Auto-instalação do Vundle **********
 " Ref: http://www.erikzaadi.com/2012/03/19/auto-installing-vundle-from-your-vimrc/  
 let g:vundle_installed=1
 let vundle_readme=expand('~/.vim/bundle/vundle/README.md')
@@ -36,11 +36,14 @@ Bundle 'snipMate'
 Bundle 'scrooloose/nerdtree'
 Bundle 'scrooloose/syntastic'
 Bundle 'majutsushi/tagbar'
-Bundle "jnwhiteh/vim-golang"
-Bundle "groenewege/vim-less"
-Bundle "https://bitbucket.org/ronoaldo/custom-vim-snippets"
-Bundle "velocity.vim"
+Bundle 'jnwhiteh/vim-golang'
+Bundle 'groenewege/vim-less'
+Bundle 'https://bitbucket.org/ronoaldo/custom-vim-snippets'
+Bundle 'velocity.vim'
+Bundle 'tpope/vim-surround'
+Bundle 'spf13/vim-colors'
 
+" Bundle if in first setup
 if g:vundle_installed == 0
   echo "Installing Bundles. Please ignore key map erro"
   echo ""
@@ -128,6 +131,16 @@ fu! HgDiff()
   0
 endfu
 
+fu! Hg(...)
+  call TempWindow('Mercurial', 1)
+  let hg_cmd = 'silent r!hg '
+  for s in a:000
+    let hg_cmd = hg_cmd . ' ' . s
+  endfor
+  execute hg_cmd
+  0
+endfu
+
 " **********  Maven **********
 
 " Maven Install
@@ -154,7 +167,7 @@ fu! MvnSurefireForCurrentFile()
   execute "silent! normal /^Results\<CR>"
 endfu
 
-" Exuberant Ctags
+" Exuberant Ctags - para diretório ~/workspace/
 fu! MvnIndexWorkspace()
   call Info("Indexing .tags file ...")
   let ctags = "!rm -vf ~/workspace/.tags && find ~/workspace/ -type f -iname '*.java' |"
@@ -163,6 +176,19 @@ fu! MvnIndexWorkspace()
 
   setlocal tags=./.tags;
   echo "Tag path: " . &tags
+endfu
+
+fu! Mvn(...)
+  call Info("Running maven ...")
+  redraw
+
+  let mvn = 'silent 0r!mvn '
+  for s in a:000
+    let mvn = mvn . ' ' . s
+  endfor
+
+  call TempWindow("Maven", 1)
+  execute mvn
 endfu
 
 " Inicia o java debugger
@@ -239,7 +265,8 @@ endfunction
 
 " ********** Comandos **********
 
-command! Review call HgDiff()
+command! HgDiff call HgDiff()
+command! -nargs=+ Hg call Hg("<args>")
 command! Gwtc !mvn -o gwt:compile
 command! IndexWorkspace call MvnIndexWorkspace()
 
@@ -247,19 +274,18 @@ command! Build make! | cw
 command! Test  call MvnSurefireForCurrentFile()
 command! Debug call StartJdb(5005)
 command! Install call MvnInstall()
+command! -nargs=+ Mvn :call Mvn("<args>")
 
 command! -nargs=1 Find :call Find("<args>")
 
 " ********** Workspace de Trabalho **********
 
-" Tabulação padrão com \t
-call SetupNormalTabs()
-
 " Mapeamentos de tipo de arquivo específico
 augroup filemapping
   au!
-  " Mapeamento de tipos de arquivo especiais
-  au BufReadPost,BufNewFile *.bsh setlocal syntax=java
+
+  " Tabulação padrão com \t
+  au BufRead,BufNewFile * call SetupNormalTabs()
 
   " Mapeamento de tabs por tipos especiais de arquivos
   " Python
@@ -283,7 +309,7 @@ augroup filemapping
   au BufRead,BufNewFile *.java compiler javac
   au BufRead,BufNewFile *.java setlocal makeprg=javac\ %
   au BufNewFile,BufRead *.java let g:syntastic_java_javac_options = "-Xlint -encoding utf-8"
-
+  au BufReadPost,BufNewFile *.bsh setlocal syntax=java
   " Conveniencia para revisar o diff antes do commit
   au BufRead /tmp/hg-editor-* call HgDiff()
 
