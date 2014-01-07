@@ -43,6 +43,7 @@ Bundle 'https://bitbucket.org/ronoaldo/custom-vim-snippets'
 Bundle 'velocity.vim'
 Bundle 'tpope/vim-surround'
 Bundle 'spf13/vim-colors'
+Bundle 'flazz/vim-colorschemes'
 Bundle 'javacomplete'
 
 " Bundle if in first setup
@@ -214,9 +215,9 @@ fu! MvnConfigureWorkspace()
     setlocal errorformat=\[ERROR]\ %f:[%l\\,%v]\ %m
     setlocal tags=./.tags;
     " Configura o NERDTree auto/open auto/close
+    let g:nerdtree_tabs_smart_startup_focus=1
+    let g:nerdtree_tabs_focus_on_files=1
     let g:nerdtree_tabs_open_on_console_startup=1
-    wincmd l
-    TagbarToggle
   endif
 endfu
 
@@ -318,10 +319,6 @@ augroup filemapping
   au FileType qf wincmd J
 augroup END
 
-fu! AutoOpenNerdTree()
-  if  
-endfu
-
 " Configura ~/workspace para usar com o Java e Maven
 let g:default_java_workspace="~/workspace"
 let g:java_autocomplete_enabled=1
@@ -331,6 +328,7 @@ augroup workspace
   autocmd VimEnter * call MvnConfigureWorkspace()
   autocmd FileType java setlocal omnifunc=javacomplete#Complete
   autocmd FileType java setlocal completefunc=javacomplete#CompleteParamsInfo
+  autocmd FileType java TagbarOpen
 augroup END
 
 " ********** Atalhos do Teclado **********
@@ -373,6 +371,6 @@ set number
 set hlsearch
 
 " Recursos visuais
-colorscheme molokai
+colorscheme jellybeans
 syntax on
 set mouse=a
