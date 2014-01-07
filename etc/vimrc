@@ -10,7 +10,7 @@
 "
 
 " Instalação:
-" $ wget http://code.ronoaldo.net/ronoaldo-utils/raw/tip/etc/vimrc -O ~/.vimrc
+" $ wget http://code.ronoaldo.net/tools/raw/tip/etc/vimrc -O ~/.vimrc
 
 " ********** Gestão de Plugins **********
 filetype off
@@ -34,6 +34,7 @@ call vundle#rc()
 Bundle 'gmarik/vundle'
 Bundle 'snipMate'
 Bundle 'scrooloose/nerdtree'
+Bundle 'jistr/vim-nerdtree-tabs'
 Bundle 'scrooloose/syntastic'
 Bundle 'majutsushi/tagbar'
 Bundle 'jnwhiteh/vim-golang'
@@ -42,6 +43,7 @@ Bundle 'https://bitbucket.org/ronoaldo/custom-vim-snippets'
 Bundle 'velocity.vim'
 Bundle 'tpope/vim-surround'
 Bundle 'spf13/vim-colors'
+Bundle 'javacomplete'
 
 " Bundle if in first setup
 if g:vundle_installed == 0
@@ -152,7 +154,7 @@ fu! MvnInstall()
 endfu
 
 " Maven JUnit
-fu! MvnSurefireForCurrentFile()
+fu! MvnTest()
   let unit_test = expand('%:t:r')
   if unit_test !~ "Test$"
     let unit_test = unit_test . "Test"
@@ -167,11 +169,13 @@ fu! MvnSurefireForCurrentFile()
   execute "silent! normal /^Results\<CR>"
 endfu
 
-" Exuberant Ctags - para diretório ~/workspace/
+" Exuberant Ctags - para diretório g:default_java_workspace
 fu! MvnIndexWorkspace()
-  call Info("Indexing .tags file ...")
-  let ctags = "!rm -vf ~/workspace/.tags && find ~/workspace/ -type f -iname '*.java' |"
-  let ctags = ctags . " xargs ctags -a -f ~/workspace/.tags --exclude='*/target/*'  -L - --totals"
+  call Info("Atualizando tags em sua workspace ...")
+  let ctags = "!rm -vf " . g:default_java_workspace . "/.tags &&"
+  let ctags = ctags . " find " . g:default_java_workspace . " -type f -iname '*.java' |"
+  let ctags = ctags . " xargs ctags -a -f ". g:default_java_workspace . "/.tags" 
+  let ctags = ctags . " --exclude='*/target/*'  -L - --totals"
   execute ctags
 
   setlocal tags=./.tags;
@@ -209,15 +213,10 @@ fu! MvnConfigureWorkspace()
     setlocal makeprg=mvn\ -q\ -o\ test-compile\ -f\ ./pom.xml
     setlocal errorformat=\[ERROR]\ %f:[%l\\,%v]\ %m
     setlocal tags=./.tags;
-  endif
-endfu
-
-" Abre automaticamente o NERDTree
-let g:auto_open_file_browser = 0
-fu! AutoOpenNerdTree()
-  if g:auto_open_file_browser
-      NERDTree
-      wincmd p
+    " Configura o NERDTree auto/open auto/close
+    let g:nerdtree_tabs_open_on_console_startup=1
+    wincmd l
+    TagbarToggle
   endif
 endfu
 
@@ -264,18 +263,17 @@ function! Find(name)
 endfunction
 
 " ********** Comandos **********
-
 command! HgDiff call HgDiff()
 command! -nargs=+ Hg call Hg("<args>")
 command! Gwtc !mvn -o gwt:compile
 command! IndexWorkspace call MvnIndexWorkspace()
-
+" Maven
 command! Build make! | cw
-command! Test  call MvnSurefireForCurrentFile()
+command! Test  call MvnTest()
 command! Debug call StartJdb(5005)
 command! Install call MvnInstall()
 command! -nargs=+ Mvn :call Mvn("<args>")
-
+" Find
 command! -nargs=1 Find :call Find("<args>")
 
 " ********** Workspace de Trabalho **********
@@ -312,6 +310,7 @@ augroup filemapping
   au BufRead,BufNewFile *.java setlocal makeprg=javac\ %
   au BufNewFile,BufRead *.java let g:syntastic_java_javac_options = "-Xlint -encoding utf-8"
   au BufReadPost,BufNewFile *.bsh setlocal syntax=java
+
   " Conveniencia para revisar o diff antes do commit
   au BufRead /tmp/hg-editor-* call HgDiff()
 
@@ -319,14 +318,19 @@ augroup filemapping
   au FileType qf wincmd J
 augroup END
 
-" Configura ~/workspace para usar com o Maven
+fu! AutoOpenNerdTree()
+  if  
+endfu
+
+" Configura ~/workspace para usar com o Java e Maven
+let g:default_java_workspace="~/workspace"
+let g:java_autocomplete_enabled=1
 augroup workspace
   au!
   let s:workspace_init = 1
-  autocmd BufNewFile,BufRead * call MvnConfigureWorkspace()
-  " Configura o NERDTree auto/open auto/close
-  autocmd VimEnter * call AutoOpenNerdTree()
-  autocmd BufEnter * if (winnr("$") == 1 && exists("b:NERDTreeType") && b:NERDTreeType == "primary") | q | endif
+  autocmd VimEnter * call MvnConfigureWorkspace()
+  autocmd FileType java setlocal omnifunc=javacomplete#Complete
+  autocmd FileType java setlocal completefunc=javacomplete#CompleteParamsInfo
 augroup END
 
 " ********** Atalhos do Teclado **********
@@ -358,14 +362,17 @@ call KeyMap("<Leader>-", ":exe \"vertical resize \" . (winheight(0) * 2/3)<CR>",
 inoremap <Leader>, <C-X><C-O>
 
 " ********** Opções de genéricas **********
-
 " Configurações padrão para usar no Vim/GVim
 filetype on
-syntax on
+
 set modeline
 set modelines=5
 set nomousehide
 set nowrap
 set number
 set hlsearch
+
+" Recursos visuais
+colorscheme molokai
+syntax on
 set mouse=a
