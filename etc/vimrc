@@ -205,10 +205,20 @@ fu! StartJdb(port)
 endfu
 
 " Configura a workspace para uso com Maven, caso encontre o arquivo pom.xml
+let g:maven_project = 0
+
+fu! MvnStatusLine()
+  if g:maven_project
+    return '[maven]'
+  endif
+  return ''
+endfu
+
 fu! MvnConfigureWorkspace()
   let l:pom = findfile("pom.xml", ";")
   if filereadable(l:pom)
     let l:project = fnamemodify(l:pom, ":h")
+    let g:maven_project = 1
     execute "cd " . l:project
     compiler ant
     setlocal makeprg=mvn\ -q\ -o\ test-compile\ -f\ ./pom.xml
@@ -374,3 +384,10 @@ set hlsearch
 colorscheme jellybeans
 syntax on
 set mouse=a
+
+" Status line
+set statusline =\ %#warningmsg#%{MvnStatusLine()}%*
+set statusline+=%<%F%h%m%r%h%w\ %y
+set statusline+=\ %{&ff}\ %{strftime(\"%c\",getftime(expand(\"%:p\")))}
+set statusline+=%=\ lin:%l%L\ col:%c%V\ pos:%o\ ascii:%b\ %P
+set laststatus=2
