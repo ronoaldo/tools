@@ -45,6 +45,8 @@ Bundle 'tpope/vim-surround'
 Bundle 'spf13/vim-colors'
 Bundle 'flazz/vim-colorschemes'
 Bundle 'javacomplete'
+Bundle 'bling/vim-airline'
+Bundle 'baskerville/bubblegum'
 
 " Bundle if in first setup
 if g:vundle_installed == 0
@@ -381,13 +383,13 @@ set number
 set hlsearch
 
 " Recursos visuais
-colorscheme jellybeans
+colorscheme bubblegum
 syntax on
 set mouse=a
 
 " Status line
-set statusline =\ %#warningmsg#%{MvnStatusLine()}%*
-set statusline+=%<%F%h%m%r%h%w\ %y
-set statusline+=\ %{&ff}\ %{strftime(\"%c\",getftime(expand(\"%:p\")))}
-set statusline+=%=\ lin:%l%L\ col:%c%V\ pos:%o\ ascii:%b\ %P
+let g:airline#extensions#tabline#enabled=1
+let g:airline_theme='bubblegum'
+let g:airline_powerline_fonts=0
+let g:airline_section_b ='%#warningmsg#%{MvnStatusLine()}'
 set laststatus=2
