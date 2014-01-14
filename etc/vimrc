@@ -47,6 +47,7 @@ Bundle 'flazz/vim-colorschemes'
 Bundle 'javacomplete'
 Bundle 'bling/vim-airline'
 Bundle 'baskerville/bubblegum'
+Bundle 'kien/ctrlp.vim'
 
 " Bundle if in first setup
 if g:vundle_installed == 0
@@ -386,8 +387,8 @@ set hlsearch
 colorscheme bubblegum
 syntax on
 set mouse=a
+set scrolloff=3
 
-" Status line
 let g:airline#extensions#tabline#enabled=1
 let g:airline_theme='bubblegum'
 let g:airline_powerline_fonts=0
