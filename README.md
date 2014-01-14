@@ -11,7 +11,7 @@ linguagens de programação, como Python, JavaScript e Java (Maven).
 
 Para instalar:
 
-    wget https://bitbucket.org/ronoaldo/tools/raw/etc/vimrc -O ~/.vimrc
+    wget https://bitbucket.org/ronoaldo/tools/raw/tip/etc/vimrc -O ~/.vimrc
 
 Para atualizar:
 
