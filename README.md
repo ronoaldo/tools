@@ -25,6 +25,7 @@ Para atualizar:
 * documentofacil: script para gerar cpf/cnpj e copiar para o clipboard
 * dpkg-purge-all: expurga todos os pacotes que possuem configuração residual
 * geocode: interface de linha de comandos para o Google Maps geocoding
+* gmail: ferramenta para envio de e-mails via CLI utilizando o SMTP do Gmail
 * jardiff: mostra a diferença de 'layout' entre dois arquivos Jar
 * kernelbuild: utilitário para baixar e compilar o Linux como pacote .deb
 * license-header: adiciona cabeçalho de licença Apache 2
