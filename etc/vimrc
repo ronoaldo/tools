@@ -297,7 +297,7 @@ augroup filemapping
   au!
 
   " Tabulação padrão com \t
-  au BufRead,BufNewFile * call SetupNormalTabs()
+  " au BufRead,BufNewFile * call SetupNormalTabs()
 
   " Mapeamento de tabs por tipos especiais de arquivos
   " Python
