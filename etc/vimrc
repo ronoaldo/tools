@@ -1,10 +1,10 @@
 " rono.vim
 "
 " Copyright (2013) Ronoalado JLP (http://www.ronoaldo.net)
-" 
+"
 " Contribuições:
 "   Filipe Peixoto (http://www.filipenos.net)
-" 
+"
 " Licença:
 "   Creative Commons CC-BY-SA
 "
@@ -16,7 +16,7 @@
 filetype off
 
 " ********** Auto-instalação do Vundle **********
-" Ref: http://www.erikzaadi.com/2012/03/19/auto-installing-vundle-from-your-vimrc/  
+" Ref: http://www.erikzaadi.com/2012/03/19/auto-installing-vundle-from-your-vimrc/
 let g:vundle_installed=1
 let vundle_readme=expand('~/.vim/bundle/vundle/README.md')
 if !filereadable(vundle_readme)
@@ -48,10 +48,11 @@ Bundle 'javacomplete'
 Bundle 'bling/vim-airline'
 Bundle 'baskerville/bubblegum'
 Bundle 'kien/ctrlp.vim'
+Bundle 'mikelue/vim-maven-plugin'
 
 " Bundle if in first setup
 if g:vundle_installed == 0
-  echo "Installing Bundles. Please ignore key map erro"
+  echo "Installing Bundles. Please ignore key map erros"
   echo ""
   :BundleInstall
 endif
@@ -149,56 +150,6 @@ endfu
 
 " **********  Maven **********
 
-" Maven Install
-fu! MvnInstall()
-  call Info("Building and installing artifacts ...")
-  call TempWindow("Maven", 1)
-  execute "silent r!mvn -o clean install"
-  0
-endfu
-
-" Maven JUnit
-fu! MvnTest()
-  let unit_test = expand('%:t:r')
-  if unit_test !~ "Test$"
-    let unit_test = unit_test . "Test"
-  endif
-
-  call Info("Junit test **" . unit_test . " ...")
-  call TempWindow("Maven", 1)
-
-  let junit = 'silent 0r!mvn -o -DskipTests=false -Dtest=**' . unit_test
-  let junit = junit . ' -DfailIfNoTests=false test'
-  silent execute junit
-  execute "silent! normal /^Results\<CR>"
-endfu
-
-" Exuberant Ctags - para diretório g:default_java_workspace
-fu! MvnIndexWorkspace()
-  call Info("Atualizando tags em sua workspace ...")
-  let ctags = "!rm -vf " . g:default_java_workspace . "/.tags &&"
-  let ctags = ctags . " find " . g:default_java_workspace . " -type f -iname '*.java' |"
-  let ctags = ctags . " xargs ctags -a -f ". g:default_java_workspace . "/.tags" 
-  let ctags = ctags . " --exclude='*/target/*'  -L - --totals"
-  execute ctags
-
-  setlocal tags=./.tags;
-  echo "Tag path: " . &tags
-endfu
-
-fu! Mvn(...)
-  call Info("Running maven ...")
-  redraw
-
-  let mvn = 'silent 0r!mvn '
-  for s in a:000
-    let mvn = mvn . ' ' . s
-  endfor
-
-  call TempWindow("Maven", 1)
-  execute mvn
-endfu
-
 " Inicia o java debugger
 fu! StartJdb(port)
   call Info("Starting jdb ... ")
@@ -207,25 +158,11 @@ fu! StartJdb(port)
   execute jdb
 endfu
 
-" Configura a workspace para uso com Maven, caso encontre o arquivo pom.xml
-let g:maven_project = 0
-
-fu! MvnStatusLine()
-  if g:maven_project
-    return '[maven]'
-  endif
-  return ''
-endfu
-
+" Setup de algumas opções padrão em um projeto maven.
 fu! MvnConfigureWorkspace()
   let l:pom = findfile("pom.xml", ";")
   if filereadable(l:pom)
-    let l:project = fnamemodify(l:pom, ":h")
-    let g:maven_project = 1
-    execute "cd " . l:project
-    compiler ant
-    setlocal makeprg=mvn\ -q\ -o\ test-compile\ -f\ ./pom.xml
-    setlocal errorformat=\[ERROR]\ %f:[%l\\,%v]\ %m
+    let g:maven_project=1
     setlocal tags=./.tags;
     " Configura o NERDTree auto/open auto/close
     let g:nerdtree_tabs_smart_startup_focus=1
@@ -238,12 +175,29 @@ endfu
 fu! IndexProject()
   call Info("Indexing current directory ...")
   let ctags = "!rm -vf ./.tags && find ./ -type f |"
-  let ctags = ctags . " xargs ctags -a -f ./.tags --exclude='*/target/*' --exclude='*min.js' -L - --totals"
+  let ctags = ctags . " xargs ctags -a -f ./.tags "
+  let ctags = ctags . " -exclude='*/target/*' --exclude='*min.js'"
+  let ctags = ctags . " -L - --totals"
   execute ctags
 
   setlocal tags=./.tags;
   echo "Tag path " . &tags
 endfu
+
+" Exuberant Ctags - para diretório g:default_java_workspace
+fu! MvnIndexWorkspace()
+  call Info("Atualizando tags em sua workspace ...")
+  let ctags = "!rm -vf " . g:default_java_workspace . "/.tags &&"
+  let ctags = ctags . " find " . g:default_java_workspace . " -type f -iname '*.java' |"
+  let ctags = ctags . " xargs ctags -a -f ". g:default_java_workspace . "/.tags"
+  let ctags = ctags . " --exclude='*/target/*'  -L - --totals"
+  execute ctags
+
+  setlocal tags=./.tags;
+  echo "Tag path: " . &tags
+endfu
+
+" ******* Misc *********
 
 " From http://vim.wikia.com/wiki/Find_files_in_subdirectories
 " Find file in current directory and edit it.
@@ -276,22 +230,7 @@ function! Find(name)
   execute ":split ".l:line
 endfunction
 
-" ********** Comandos **********
-command! HgDiff call HgDiff()
-command! -nargs=+ Hg call Hg("<args>")
-command! Gwtc !mvn -o gwt:compile
-command! IndexWorkspace call MvnIndexWorkspace()
-" Maven
-command! Build make! | cw
-command! Test  call MvnTest()
-command! Debug call StartJdb(5005)
-command! Install call MvnInstall()
-command! -nargs=+ Mvn :call Mvn("<args>")
-" Find
-command! -nargs=1 Find :call Find("<args>")
-
 " ********** Workspace de Trabalho **********
-
 " Mapeamentos de tipo de arquivo específico
 augroup filemapping
   au!
@@ -322,7 +261,9 @@ augroup filemapping
   " Java
   au BufRead,BufNewFile *.java compiler javac
   au BufRead,BufNewFile *.java setlocal makeprg=javac\ %
-  au BufNewFile,BufRead *.java let g:syntastic_java_javac_options = "-Xlint -encoding utf-8"
+  au BufRead,BufNewFile *.java let g:syntastic_java_javac_options = "-Xlint -encoding utf-8"
+  au BufRead,BufNewFile *.java call SetupNormalTabs() | setlocal sw=2 ts=2
+  " Bean shell
   au BufReadPost,BufNewFile *.bsh setlocal syntax=java
 
   " Conveniencia para revisar o diff antes do commit
@@ -333,6 +274,7 @@ augroup filemapping
 augroup END
 
 " Configura ~/workspace para usar com o Java e Maven
+let g:maven_auto_set_path=1
 let g:default_java_workspace="~/workspace"
 let g:java_autocomplete_enabled=1
 augroup workspace
@@ -344,6 +286,25 @@ augroup workspace
   autocmd FileType java TagbarOpen
 augroup END
 
+" ********** Comandos **********
+" Mercurial
+command! HgDiff call HgDiff()
+command! -nargs=+ Hg call Hg("<args>")
+" Ctags
+command! IndexWorkspace call MvnIndexWorkspace()
+command! IndexProject call IndexProject()
+" Maven
+command! Build :Mvn clean package | redraw! | cw
+command! Test :Mvn -o test -Dtest=%:t:r -DfailIfNoTests=true | redraw! | cw
+command! TestAll :Mvn -o test | redraw! | cw
+command! Install :Mvn -o clean insatll | redraw! | cw
+command! Clean :Mvn -o clean | redraw
+" Java Debugger
+command! Debug call StartJdb(5005)
+
+" Find
+command! -nargs=1 Find :call Find("<args>")
+
 " ********** Atalhos do Teclado **********
 
 " Mapeia o \s para salvar o arquivo
@@ -351,16 +312,16 @@ call KeyMap('<Leader>s', ':update', 0)
 " Mapeia o \x para fechar o arquivo
 call KeyMap("<Leader>x", ":quitall", 0)
 " Mapeamentos para o Mercurial
-call KeyMap("<Leader>d", ":Debug", 1)
-call KeyMap("<Leader>u", ":call HgPull()", 1)
-call KeyMap("<Leader>p", ":call HgPush()", 1)
+call KeyMap("<Leader>d", ":Debug", 0)
+call KeyMap("<Leader>u", ":call HgPull()", 0)
+call KeyMap("<Leader>p", ":call HgPush()", 0)
 " Mapeamentos para desenvolvimento Java/Maven
 call KeyMap("<Leader>i", ":Install", 0)
 call KeyMap("<Leader>b", ":Build", 0)
-call KeyMap("<Leader>t", ":Test", 0)
+call KeyMap("<Leader>t", "maven#run-unittest", 0)
 " Mapeamentos para navegador de tags/arquivos
 call KeyMap("<C-F11>", ":NERDTreeToggle", 1)
-call KeyMap("<C-F12>", ":TagbarToggle", 1)
+call KeyMap("<C-F10>", ":TagbarToggle", 1)
 " Mapeia o equivalente do Eclipse (CTRL+SHIFT+F) para ':normal gg=G'
 call KeyMap("<C-S-F>", ":normal gg=G", 1)
 call KeyMap("<Leader>f", ":normal gg=G", 0)
@@ -373,24 +334,31 @@ call KeyMap("<Leader>-", ":exe \"vertical resize \" . (winheight(0) * 2/3)<CR>",
 inoremap <Leader>, <C-X><C-O>
 
 " ********** Opções de genéricas **********
+
 " Configurações padrão para usar no Vim/GVim
 filetype on
-
 set modeline
 set modelines=5
 set nomousehide
 set nowrap
 set number
 set hlsearch
+set sw=4 ts=4
 
-" Recursos visuais
-colorscheme bubblegum
+" Tema/syntaxe
+try
+  colorscheme jellybeans
+  let g:airline_theme='molokai'
+catch
+  echo "No colorscheme found for 'jellybeans'"
+endtry
 syntax on
+
+" Mouse/scroll
 set mouse=a
 set scrolloff=3
 
+" Status line
 let g:airline#extensions#tabline#enabled=1
-let g:airline_theme='bubblegum'
 let g:airline_powerline_fonts=0
-let g:airline_section_b ='%#warningmsg#%{MvnStatusLine()}'
 set laststatus=2
