@@ -40,5 +40,6 @@ Para atualizar:
 * replicate: replica o mesmo comando em subdiretórios do diretório corrente
 * s3-repository: implementação simples de repositório Debian usando S3
 * update-hgrc: atualiza configurações do seu .hg/hgrc
+* vim-update-bundles: atualiza os plugins com Vundle que estão ativos no vimrc
 * wpa-connect: interface de conexão a redes Wifi via linha de comandos
 * zipit: ferramenta para compactar diretórios como arquivo zip
