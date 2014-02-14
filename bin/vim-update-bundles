@@ -1,0 +1,18 @@
+#!/bin/bash
+
+usage() {
+	echo "Usage $(basename $0) [-c|--clean]"
+}
+
+VIM_ARGS="+BundleInstall +BundleUpdate +qall"
+case $1 in
+	-h|--help)
+		usage
+		exit 1
+	;;
+	--clean|-c)
+		export VIM_ARGS="+BundleClean $VIM_ARGS"
+	;;
+esac
+
+vim $VIM_ARGS
