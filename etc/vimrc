@@ -266,6 +266,15 @@ augroup filemapping
   " Bean shell
   au BufReadPost,BufNewFile *.bsh setlocal syntax=java
 
+  " Go AppEngine support via 'goapp'
+  if executable('goapp')
+    au BufRead,BufNewFile *.go setlocal makeprg=goapp\ build
+    au BufRead,BufNewFile *.go let g:syntastic_go_checkers=['goapp']
+  else
+    au BufRead,BufNewFile *.go setlocal makeprg=go\ build
+    au BufRead,BufNewFile *.go let g:syntastic_go_checkers=['go']
+  end
+
   " Conveniencia para revisar o diff antes do commit
   au BufRead /tmp/hg-editor-* call HgDiff()
 
@@ -362,3 +371,7 @@ set scrolloff=3
 let g:airline#extensions#tabline#enabled=1
 let g:airline_powerline_fonts=0
 set laststatus=2
+
+" Goodies with Syntastic
+let g:syntastic_full_redraws=1
+let g:syntastic_auto_loc_list=1
