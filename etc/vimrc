@@ -235,9 +235,6 @@ endfunction
 augroup filemapping
   au!
 
-  " Tabulação padrão com \t
-  " au BufRead,BufNewFile * call SetupNormalTabs()
-
   " Mapeamento de tabs por tipos especiais de arquivos
   " Python
   au BufRead,BufNewFile *.py call SetupSpaceTabs()
@@ -253,7 +250,7 @@ augroup filemapping
   " TXT
   au BufRead,BufNewFile *.txt call Setup2SpaceTabs()
   " Velocity
-  au BufRead,BufNewFile *.vm set filetype=velocity
+  au BufRead,BufNewFile *.vm setlocal filetype=velocity
   " Vim
   au BufRead,BufNewFile *.vimrc call Setup2SpaceTabs()
   au BufRead,BufNewFile vimrc call Setup2SpaceTabs()
@@ -264,7 +261,7 @@ augroup filemapping
   au BufRead,BufNewFile *.java let g:syntastic_java_javac_options = "-Xlint -encoding utf-8"
   au BufRead,BufNewFile *.java call SetupNormalTabs() | setlocal sw=2 ts=2
   " Bean shell
-  au BufReadPost,BufNewFile *.bsh setlocal syntax=java
+  au BufReadPost,BufNewFile *.bsh setlocal filetype=java
 
   " Go AppEngine support via 'goapp'
   if executable('goapp')
@@ -365,7 +362,7 @@ syntax on
 
 " Mouse/scroll
 set mouse=a
-set scrolloff=3
+set scrolloff=2
 
 " Status line
 let g:airline#extensions#tabline#enabled=1
@@ -374,4 +371,5 @@ set laststatus=2
 
 " Goodies with Syntastic
 let g:syntastic_full_redraws=1
-let g:syntastic_auto_loc_list=1
+let g:syntastic_auto_loc_list=0
+
