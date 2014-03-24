@@ -48,7 +48,7 @@ Bundle 'javacomplete'
 Bundle 'bling/vim-airline'
 Bundle 'baskerville/bubblegum'
 Bundle 'kien/ctrlp.vim'
-Bundle 'mikelue/vim-maven-plugin'
+Bundle "ekalinin/Dockerfile.vim"
 
 " Bundle if in first setup
 if g:vundle_installed == 0
@@ -372,4 +372,9 @@ set laststatus=2
 " Goodies with Syntastic
 let g:syntastic_full_redraws=1
 let g:syntastic_auto_loc_list=0
+
+" Per-project .vimrc
+" From: http://damien.lespiau.name/blog/2009/03/18/per-project-vimrc/comment-page-1/
+set exrc
+set secure
 
