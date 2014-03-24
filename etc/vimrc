@@ -48,7 +48,7 @@ Bundle 'javacomplete'
 Bundle 'bling/vim-airline'
 Bundle 'baskerville/bubblegum'
 Bundle 'kien/ctrlp.vim'
-Bundle "ekalinin/Dockerfile.vim"
+Bundle 'ekalinin/Dockerfile.vim'
 
 " Bundle if in first setup
 if g:vundle_installed == 0
@@ -352,12 +352,15 @@ set hlsearch
 set sw=4 ts=4
 
 " Tema/syntaxe
-try
-  colorscheme jellybeans
-  let g:airline_theme='molokai'
-catch
-  echo "No colorscheme found for 'jellybeans'"
-endtry
+if &t_Co >= 256
+  try
+    colorscheme molokai
+  catch
+    echo "Unable to setup colorscheme"
+  endtry
+else
+  colorscheme default
+endif
 syntax on
 
 " Mouse/scroll
@@ -365,7 +368,6 @@ set mouse=a
 set scrolloff=2
 
 " Status line
-let g:airline#extensions#tabline#enabled=0
 let g:airline_powerline_fonts=0
 set laststatus=2
 
@@ -377,4 +379,3 @@ let g:syntastic_auto_loc_list=0
 " From: http://damien.lespiau.name/blog/2009/03/18/per-project-vimrc/comment-page-1/
 set exrc
 set secure
-
