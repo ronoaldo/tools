@@ -2,27 +2,24 @@
 "
 " Copyright (2013) Ronoalado JLP (http://www.ronoaldo.net)
 "
-" Contribuições:
+" Contributions:
 "   Filipe Peixoto (http://www.filipenos.net)
 "
-" Licença:
+" License:
 "   Creative Commons CC-BY-SA
 "
 
-" Instalação:
-" $ wget http://code.ronoaldo.net/tools/raw/tip/etc/vimrc -O ~/.vimrc
-
-" ********** Gestão de Plugins **********
+" Vundle - Plugin setup
 filetype off
 
-" ********** Auto-instalação do Vundle **********
+" Auto-setup of Vundle:
 " Ref: http://www.erikzaadi.com/2012/03/19/auto-installing-vundle-from-your-vimrc/
 let g:vundle_installed=1
 let vundle_readme=expand('~/.vim/bundle/vundle/README.md')
 if !filereadable(vundle_readme)
   echo "Installing Vundle..."
   echo ""
-  silent !mkdir ~/.vim/bundle
+  silent !mkdir -p ~/.vim/bundle
   silent !git clone https://github.com/gmarik/vundle.git ~/.vim/bundle/vundle
   let g:vundle_installed=0
 endif
@@ -30,59 +27,60 @@ endif
 set runtimepath+=~/.vim/bundle/vundle/
 call vundle#rc()
 
-" Plugins
-Bundle 'gmarik/vundle'
-Bundle 'snipMate'
-Bundle 'scrooloose/nerdtree'
-Bundle 'jistr/vim-nerdtree-tabs'
-Bundle 'scrooloose/syntastic'
-Bundle 'majutsushi/tagbar'
-Bundle 'Blackrush/vim-gocode'
-Bundle 'groenewege/vim-less'
-Bundle 'https://bitbucket.org/ronoaldo/custom-vim-snippets'
-Bundle 'velocity.vim'
-Bundle 'tpope/vim-surround'
-Bundle 'spf13/vim-colors'
-Bundle 'flazz/vim-colorschemes'
-Bundle 'javacomplete'
-Bundle 'bling/vim-airline'
-Bundle 'baskerville/bubblegum'
-Bundle 'kien/ctrlp.vim'
-Bundle 'ekalinin/Dockerfile.vim'
+" Basic plugins
+Plugin 'gmarik/vundle'
+" Snippets for quick code editing
+Plugin 'snipMate'
+" Some custom snippets
+Plugin 'https://bitbucket.org/ronoaldo/custom-vim-snippets'
+" Awesome file navigation
+Plugin 'scrooloose/nerdtree'
+" Syntax check for various files
+Plugin 'scrooloose/syntastic'
+" Tag navigator for current file (Outline)
+Plugin 'majutsushi/tagbar'
+" Fuzzy finder for current tree
+Plugin 'kien/ctrlp.vim'
+" Helper for open/close tags and other tools
+Plugin 'tpope/vim-surround'
+" Lots of color schemes
+Plugin 'flazz/vim-colorschemes'
+" Go code completion integration
+Plugin 'Blackrush/vim-gocode'
+" Syntax Hilight
+Plugin 'ekalinin/Dockerfile.vim'
+Plugin 'velocity.vim'
+Plugin 'groenewege/vim-less'
 
-" Bundle if in first setup
+" Install plugins if this is the first run
 if g:vundle_installed == 0
-  echo "Installing Bundles. Please ignore key map erros"
+  echo "Installing Plugins. Please ignore key map erros, if any..."
   echo ""
-  :BundleInstall
+  :PluginInstall!
+  echo "Plugin setup completed"
 endif
 
 filetype plugin indent on
 
-" ********** Funções **********
-
-" Configurações de tabulação
-" Tabs Normais
+" Tabs
 fu! SetupNormalTabs()
   setlocal sw=4 ts=4 st=4 noet si ai
 endfu
-" Tabs com 4 espaços
+
 fu! SetupSpaceTabs()
   setlocal sw=4 ts=4 st=4 et si ai
 endfu
-" Tabs com 2 espaços
+
 fu! Setup2SpaceTabs()
   setlocal sw=2 ts=2 st=2 et si ai
 endfu
 
-" ********** Funções Auxiliares **********
-
-" Mensagens ao executar comandos demorados
+" Messages
 fu! Info(msg)
   execute "echom '[ " . a:msg . " ]'"
 endfu
 
-" Mapeamento de atalhos conveniente
+" All-modes shortcuts
 fu! KeyMap(key, action, insert_mode)
   execute "noremap  <silent> " . a:key . " " . a:action . "<CR>"
   execute "vnoremap <silent> " . a:key . " <C-C>" . a:action . "<CR>"
@@ -91,8 +89,7 @@ fu! KeyMap(key, action, insert_mode)
   endif
 endfu
 
-" Abre uma janela temprária, opcionalmente limpando
-" os valores atualmente existentes no mesmo buffer.
+" Disposable temporary window
 fu! TempWindow(name, clear) abort
   let name = substitute(a:name, "[^a-zA-Z0-9]", "_", "g")
   let bn = bufnr(name)
@@ -119,8 +116,7 @@ fu! TempWindow(name, clear) abort
   wincmd J
 endfu
 
-" ********** Mercurial **********
-
+" Mercurial 
 fu! HgPull()
   call Info("Pulling changes from remote repository ...")
   !hg pull
@@ -148,44 +144,33 @@ fu! Hg(...)
   0
 endfu
 
-" **********  Maven **********
+" Maven
+fu! Mvn(...)
+  call TempWindow('Maven', 1)
+  let mvn_cmd = 'silent r!mvn '
+  for s in a:000
+    let mvn_cmd = mvn_cmd . ' ' . s
+  endfor
+  execute mvn_cmd
+  0
+endfu
 
-" Inicia o java debugger
-fu! StartJdb(port)
+fu! MavenDebug(port)
   call Info("Starting jdb ... ")
   let jdb = "!jdb -sourcepath " . $PWD . "/src/main/java:" . $PWD . "/src/test/java"
   let jdb = jdb . " -port " . a:port
   execute jdb
 endfu
 
-" Setup de algumas opções padrão em um projeto maven.
-fu! MvnConfigureWorkspace()
+fu! MavenWorkspace()
   let l:pom = findfile("pom.xml", ";")
   if filereadable(l:pom)
     let g:maven_project=1
     setlocal tags=./.tags;
-    " Configura o NERDTree auto/open auto/close
-    let g:nerdtree_tabs_smart_startup_focus=1
-    let g:nerdtree_tabs_focus_on_files=1
-    let g:nerdtree_tabs_open_on_console_startup=1
   endif
 endfu
 
-" Exuberant Ctags for current directory/project
-fu! IndexProject()
-  call Info("Indexing current directory ...")
-  let ctags = "!rm -vf ./.tags && find ./ -type f |"
-  let ctags = ctags . " xargs ctags -a -f ./.tags "
-  let ctags = ctags . " -exclude='*/target/*' --exclude='*min.js'"
-  let ctags = ctags . " -L - --totals"
-  execute ctags
-
-  setlocal tags=./.tags;
-  echo "Tag path " . &tags
-endfu
-
-" Exuberant Ctags - para diretório g:default_java_workspace
-fu! MvnIndexWorkspace()
+fu! MavenCtags()
   call Info("Atualizando tags em sua workspace ...")
   let ctags = "!rm -vf " . g:default_java_workspace . "/.tags &&"
   let ctags = ctags . " find " . g:default_java_workspace . " -type f -iname '*.java' |"
@@ -197,7 +182,18 @@ fu! MvnIndexWorkspace()
   echo "Tag path: " . &tags
 endfu
 
-" ******* Misc *********
+" CTags 
+fu! IndexProject()
+  call Info("Indexing current directory ...")
+  let ctags = "!rm -vf ./.tags && find ./ -type f |"
+  let ctags = ctags . " xargs ctags -a -f ./.tags "
+  let ctags = ctags . " -exclude='*/target/*' --exclude='*min.js'"
+  let ctags = ctags . " -L - --totals"
+  execute ctags
+
+  setlocal tags=./.tags;
+  echo "Tag path " . &tags
+endfu
 
 " From http://vim.wikia.com/wiki/Find_files_in_subdirectories
 " Find file in current directory and edit it.
@@ -230,12 +226,9 @@ function! Find(name)
   execute ":split ".l:line
 endfunction
 
-" ********** Workspace de Trabalho **********
-" Mapeamentos de tipo de arquivo específico
+" Default options for various file types
 augroup filemapping
   au!
-
-  " Mapeamento de tabs por tipos especiais de arquivos
   " Python
   au BufRead,BufNewFile *.py call SetupSpaceTabs()
   au FileType python call SetupSpaceTabs()
@@ -265,10 +258,10 @@ augroup filemapping
 
   " Go AppEngine support via 'goapp'
   if executable('goapp')
-    au BufRead,BufNewFile *.go setlocal makeprg=goapp\ build
+    au BufRead,BufNewFile *.go setlocal makeprg=goapp\ test -c
     au BufRead,BufNewFile *.go let g:syntastic_go_checkers=['goapp']
   else
-    au BufRead,BufNewFile *.go setlocal makeprg=go\ build
+    au BufRead,BufNewFile *.go setlocal makeprg=go\ test -c
     au BufRead,BufNewFile *.go let g:syntastic_go_checkers=['go']
   end
 
@@ -279,67 +272,66 @@ augroup filemapping
   au FileType qf wincmd J
 augroup END
 
-" Configura ~/workspace para usar com o Java e Maven
-let g:maven_auto_set_path=1
+" Java/Maven workspace setup
 let g:default_java_workspace="~/workspace"
-let g:java_autocomplete_enabled=1
 augroup workspace
   au!
   let s:workspace_init = 1
-  autocmd VimEnter * call MvnConfigureWorkspace()
-  autocmd FileType java setlocal omnifunc=javacomplete#Complete
-  autocmd FileType java setlocal completefunc=javacomplete#CompleteParamsInfo
+  autocmd VimEnter * call MavenWorkspace()
   autocmd FileType java TagbarOpen
 augroup END
 
-" ********** Comandos **********
 " Mercurial
-command! HgDiff call HgDiff()
 command! -nargs=+ Hg call Hg("<args>")
+
 " Ctags
-command! IndexWorkspace call MvnIndexWorkspace()
 command! IndexProject call IndexProject()
+
 " Maven
-command! Build :Mvn clean package | redraw! | cw
-command! Test :Mvn -o test -Dtest=%:t:r -DfailIfNoTests=true | redraw! | cw
-command! TestAll :Mvn -o test | redraw! | cw
-command! Install :Mvn -o clean insatll | redraw! | cw
-command! Clean :Mvn -o clean | redraw
-" Java Debugger
-command! Debug call StartJdb(5005)
+command! -nargs=+ Mvn call Mvn("<args>")
+command! MavenCtags call MavenCtags()
+command! MavenBuild :Mvn clean package | redraw! | cw
+command! MavenTest :Mvn -o test -Dtest=%:t:r -DfailIfNoTests=true | redraw! | cw
+command! MavenTestAll :Mvn -o test | redraw! | cw
+command! MavenInstall :Mvn -o clean insatll | redraw! | cw
+command! MavenClean :Mvn -o clean | redraw
+command! MavenDebug call MavenDebug(5005)
 
 " Find
 command! -nargs=1 Find :call Find("<args>")
 
-" ********** Atalhos do Teclado **********
-
-" Mapeia o \s para salvar o arquivo
+" \s save
 call KeyMap('<Leader>s', ':update', 0)
-" Mapeia o \x para fechar o arquivo
+" \x close all
 call KeyMap("<Leader>x", ":quitall", 0)
-" Mapeamentos para o Mercurial
-call KeyMap("<Leader>d", ":Debug", 0)
-call KeyMap("<Leader>u", ":call HgPull()", 0)
-call KeyMap("<Leader>p", ":call HgPush()", 0)
-" Mapeamentos para desenvolvimento Java/Maven
-call KeyMap("<Leader>i", ":Install", 0)
-call KeyMap("<Leader>b", ":Build", 0)
-call KeyMap("<Leader>t", "maven#run-unittest", 0)
-" Mapeamentos para navegador de tags/arquivos
+" \u pull changes
+call KeyMap("<Leader>u", ":Hg pull", 0)
+" \p push changes
+call KeyMap("<Leader>p", ":Hg push", 0)
+" \i mvn install
+call KeyMap("<Leader>i", ":MavenInstall", 0)
+" \b mvn clean package
+call KeyMap("<Leader>b", ":MavenBuild", 0)
+" \t mvn test
+call KeyMap("<Leader>t", ":MavenTest", 0)
+" Ctrl F11 open file tree
 call KeyMap("<C-F11>", ":NERDTreeToggle", 1)
+" Ctrl F10 open tag tree
 call KeyMap("<C-F10>", ":TagbarToggle", 1)
-" Mapeia o equivalente do Eclipse (CTRL+SHIFT+F) para ':normal gg=G'
+" Ctrl Shift F format code
 call KeyMap("<C-S-F>", ":normal gg=G", 1)
+" \f format code
 call KeyMap("<Leader>f", ":normal gg=G", 0)
-" Alternativa para mudar de janelas, quando o CTRL+W não poder ser usado
+" \w change window 
 call KeyMap("<Leader>w", ":wincmd W", 0)
-" Redimensiona a janela usando leader+ e leader-
+" \+ increase window vertical size
 call KeyMap("<Leader>+", ":exe \"vertical resize \" . (winheight(0) * 3/2)<CR>", 0)
+" \- decrease window vertical size
 call KeyMap("<Leader>-", ":exe \"vertical resize \" . (winheight(0) * 2/3)<CR>", 0)
 " Omnicomplete
 inoremap <Leader>, <C-X><C-O>
-
-" ********** Opções de genéricas **********
+inoremap <C-Space> <C-X><C-O>
+inoremap <C-@> <C-X><C-O>
 
 " Configurações padrão para usar no Vim/GVim
 filetype on
@@ -366,10 +358,6 @@ syntax on
 " Mouse/scroll
 set mouse=a
 set scrolloff=2
-
-" Status line
-let g:airline_powerline_fonts=0
-set laststatus=2
 
 " Goodies with Syntastic
 let g:syntastic_full_redraws=1
