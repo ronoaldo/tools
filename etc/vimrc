@@ -134,6 +134,11 @@ fu! HgDiff()
   0
 endfu
 
+fu! HgMergeMsg()
+  execute "silent r!echo -n 'Merge with '; hg id -i | cut -f 2 -d'+'"
+  0d
+endfu
+
 fu! Hg(...)
   call TempWindow('Mercurial', 1)
   let hg_cmd = 'silent r!hg '
