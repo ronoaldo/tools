@@ -1,0 +1,5 @@
+#!/bin/bash
+
+echo '<table border="1">'
+sed -e 's/</\&lt;/g' -e 's/>/\&gt;/g' -e 's;,;</td><td>;g' -e 's;^;<tr><td>;g' -e 's;$;</td></tr>;g'
+echo '</table>'

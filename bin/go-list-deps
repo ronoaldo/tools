@@ -1,0 +1,8 @@
+#!/bin/bash
+
+(
+go list -f "{{range .Imports}}{{.}}
+{{end}}" $@
+go list -f "{{range .TestImports}}{{.}}
+{{end}}" $@
+) | sort | grep -v '^$' | uniq
