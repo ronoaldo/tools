@@ -156,8 +156,10 @@ fu! Mvn(...)
   for s in a:000
     let mvn_cmd = mvn_cmd . ' ' . s
   endfor
+  silent echom "Running " . mvn_cmd
   execute mvn_cmd
-  0
+  setlocal filetype=mvnbuild
+  0d
 endfu
 
 fu! MavenDebug(port)
@@ -188,11 +190,11 @@ fu! MavenCtags()
 endfu
 
 " CTags 
-fu! IndexProject()
+fu! Ctags()
   call Info("Indexing current directory ...")
   let ctags = "!rm -vf ./.tags && find ./ -type f |"
   let ctags = ctags . " xargs ctags -a -f ./.tags "
-  let ctags = ctags . " -exclude='*/target/*' --exclude='*min.js'"
+  let ctags = ctags . " --exclude='*/target/*' --exclude='*min.js'"
   let ctags = ctags . " -L - --totals"
   execute ctags
 
@@ -290,17 +292,17 @@ augroup END
 command! -nargs=+ Hg call Hg("<args>")
 
 " Ctags
-command! IndexProject call IndexProject()
+command! Ctags call Ctags()
 
 " Maven
 command! -nargs=+ Mvn call Mvn("<args>")
-command! MavenCtags call MavenCtags()
-command! MavenBuild :Mvn clean package | redraw! | cw
-command! MavenTest :Mvn -o test -Dtest=%:t:r -DfailIfNoTests=true | redraw! | cw
-command! MavenTestAll :Mvn -o test | redraw! | cw
-command! MavenInstall :Mvn -o clean insatll | redraw! | cw
-command! MavenClean :Mvn -o clean | redraw
-command! MavenDebug call MavenDebug(5005)
+command! MavenCtags   call MavenCtags()
+command! MavenBuild   :Mvn clean package
+command! MavenTest    call Mvn('-o test -Dtest='.expand('%:t:r').(' -DfailIfNoTests=true')
+command! MavenTestAll :Mvn -o test 
+command! MavenInstall :Mvn -o clean install
+command! MavenClean   :Mvn -o clean
+command! MavenDebug   call MavenDebug(5005)
 
 " Find
 command! -nargs=1 Find :call Find("<args>")
