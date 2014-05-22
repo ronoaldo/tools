@@ -151,12 +151,12 @@ endfu
 
 " Maven
 fu! Mvn(...)
-  call TempWindow('Maven', 1)
   let mvn_cmd = 'silent r!mvn '
   for s in a:000
     let mvn_cmd = mvn_cmd . ' ' . s
   endfor
-  silent echom "Running " . mvn_cmd
+  call TempWindow('Maven', 1)
+  echo "Running " . mvn_cmd
   execute mvn_cmd
   setlocal filetype=mvnbuild
   0d
@@ -298,7 +298,7 @@ command! Ctags call Ctags()
 command! -nargs=+ Mvn call Mvn("<args>")
 command! MavenCtags   call MavenCtags()
 command! MavenBuild   :Mvn clean package
-command! MavenTest    call Mvn('-o test -Dtest='.expand('%:t:r').(' -DfailIfNoTests=true')
+command! MavenTest    call Mvn("-o", "test", "-DskipTests=false", "-Dtest=".expand("%:t:r"), "-DfailIfNoTests=true")
 command! MavenTestAll :Mvn -o test 
 command! MavenInstall :Mvn -o clean install
 command! MavenClean   :Mvn -o clean
