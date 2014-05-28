@@ -339,6 +339,15 @@ call KeyMap("<Leader>-", ":exe \"vertical resize \" . (winheight(0) * 2/3)<CR>",
 inoremap <Leader>, <C-X><C-O>
 inoremap <C-Space> <C-X><C-O>
 inoremap <C-@> <C-X><C-O>
+" Move line/block up: \k
+nnoremap <leader>k :m-2<cr>
+vnoremap <leader>k :m'<-2<cr>gv=gv
+" Move line/block down: \j
+nnoremap <leader>j :m+1<cr>
+vnoremap <leader>j :m'>+1<cr>gv=gv
+" Duplicate line/block down: \y
+nnoremap <leader>y :t.<cr>
+vnoremap <leader>y :t'>.<cr>gv=gv
 
 " Configurações padrão para usar no Vim/GVim
 filetype on
