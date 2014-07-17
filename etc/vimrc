@@ -307,6 +307,8 @@ command! MavenDebug   call MavenDebug(5005)
 " Find
 command! -nargs=1 Find :call Find("<args>")
 
+" Keyboard and Shortcuts
+let mapleader=","
 " \s save
 call KeyMap('<Leader>s', ':update', 0)
 " \x close all
@@ -359,16 +361,12 @@ set number
 set hlsearch
 set sw=4 ts=4
 
-" Tema/syntaxe
-if &t_Co >= 256
-  try
-    colorscheme molokai
-  catch
-    echo "Unable to setup colorscheme"
-  endtry
-else
+" Color and Syntax
+try
+  colorscheme mustang
+catch
   colorscheme default
-endif
+endtry
 syntax on
 
 " Mouse/scroll
