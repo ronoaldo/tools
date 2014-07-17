@@ -1,0 +1,10 @@
+#!/bin/bash
+
+# Source: http://serverfault.com/a/481171
+
+if [ -z $1 ] ; then
+	len=32
+else
+	len=$1
+fi
+exec head -c 500 /dev/urandom | tr -dc 'a-zA-Z0-9_\/-' | fold -w $len | head -n 1
