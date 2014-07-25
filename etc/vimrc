@@ -45,6 +45,7 @@ Plugin 'kien/ctrlp.vim'
 Plugin 'tpope/vim-surround'
 " Lots of color schemes
 Plugin 'flazz/vim-colorschemes'
+Plugin 'ScrollColors'
 " Go code completion integration
 Plugin 'Blackrush/vim-gocode'
 " Syntax Hilight
@@ -90,11 +91,11 @@ fu! KeyMap(key, action, insert_mode)
 endfu
 
 " Disposable temporary window
-fu! TempWindow(name, clear) abort
+fu! TempWindow(name, clear, mode) abort
   let name = substitute(a:name, "[^a-zA-Z0-9]", "_", "g")
   let bn = bufnr(name)
   if bn == -1
-    execute "new " . name
+    exe "new " . name
     let bn = bufnr(name)
     setlocal buftype=nofile
     setlocal bufhidden=hide
@@ -113,7 +114,11 @@ fu! TempWindow(name, clear) abort
     normal gg
     normal dG
   endif
-  wincmd J
+  if a:mode == 'v'
+    wincmd L
+  else
+    wincmd J
+  endif
 endfu
 
 " Mercurial 
@@ -128,10 +133,10 @@ fu! HgPush()
 endfu
 
 fu! HgDiff()
-  call TempWindow("Mercurial Changes", 1)
+  call TempWindow("Mercurial Changes", 1, 'v')
   setfiletype diff
   execute 'silent r!hg diff --git'
-  0
+  0d
 endfu
 
 fu! HgMergeMsg()
@@ -140,13 +145,13 @@ fu! HgMergeMsg()
 endfu
 
 fu! Hg(...)
-  call TempWindow('Mercurial', 1)
+  call TempWindow('Mercurial', 1, 'h')
   let hg_cmd = 'silent r!hg '
   for s in a:000
     let hg_cmd = hg_cmd . ' ' . s
   endfor
   execute hg_cmd
-  0
+  0d
 endfu
 
 " Maven
@@ -155,7 +160,7 @@ fu! Mvn(...)
   for s in a:000
     let mvn_cmd = mvn_cmd . ' ' . s
   endfor
-  call TempWindow('Maven', 1)
+  call TempWindow('Maven', 1, 'h')
   echo "Running " . mvn_cmd
   execute mvn_cmd
   setlocal filetype=mvnbuild
@@ -362,11 +367,7 @@ set hlsearch
 set sw=4 ts=4
 
 " Color and Syntax
-try
-  colorscheme mustang
-catch
-  colorscheme default
-endtry
+colorscheme default
 syntax on
 
 " Mouse/scroll
