@@ -207,6 +207,21 @@ fu! Ctags()
   echo "Tag path " . &tags
 endfu
 
+" Golang
+function! GoappTest()
+  let test_line = search("func Test", "bs")
+  ''
+  if test_line > 0
+    let line = getline(test_line)
+    let test_name_raw = split(line, " ")[1]
+    let test_name = split(test_name_raw, "(")[0]
+    let go_cmd = '!goapp test -v -test.run=' . test_name
+    exec go_cmd
+  else
+    echo "No test found"
+  endif
+endfunction
+
 " From http://vim.wikia.com/wiki/Find_files_in_subdirectories
 " Find file in current directory and edit it.
 function! Find(name)
@@ -309,6 +324,9 @@ command! MavenInstall :Mvn -o clean install
 command! MavenClean   :Mvn -o clean
 command! MavenDebug   call MavenDebug(5005)
 
+" Golang
+command! -nargs=* GoappTest call GoappTest()
+
 " Find
 command! -nargs=1 Find :call Find("<args>")
 
@@ -342,6 +360,8 @@ call KeyMap("<Leader>w", ":wincmd W", 0)
 call KeyMap("<Leader>+", ":exe \"vertical resize \" . (winheight(0) * 3/2)<CR>", 0)
 " \- decrease window vertical size
 call KeyMap("<Leader>-", ":exe \"vertical resize \" . (winheight(0) * 2/3)<CR>", 0)
+" gt Run Goapp Tests
+call KeyMap("gt", ":GoappTest", 0)
 " Omnicomplete
 inoremap <Leader>, <C-X><C-O>
 inoremap <C-Space> <C-X><C-O>
