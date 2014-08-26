@@ -295,6 +295,10 @@ augroup filemapping
   " Conveniencia para revisar o diff antes do commit
   au BufRead /tmp/hg-editor-* call HgDiff()
 
+  " Auto close preview/scratch window after select option with omnicomplete
+  autocmd CursorMovedI * if pumvisible() == 0 | pclose | endif
+  autocmd InsertLeave * if pumvisible() == 0 | pclose | endif
+
   " Posiciona a janela QuickFix sempre na parte inferior da tela
   au FileType qf wincmd J
 augroup END
