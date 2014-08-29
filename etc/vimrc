@@ -282,6 +282,9 @@ augroup filemapping
   au BufRead,BufNewFile *.java call SetupNormalTabs() | setlocal sw=2 ts=2
   " Bean shell
   au BufReadPost,BufNewFile *.bsh setlocal filetype=java
+  " Coffee 
+  au BufRead,BufNewFile *.coffee call SetupSpaceTabs()
+  au FileType coffee call SetupSpaceTabs()
 
   " Go AppEngine support via 'goapp'
   if executable('goapp')
