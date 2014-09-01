@@ -16,9 +16,13 @@
 
 dig_query() {
 	domain="$1"
-	dig $domain A $domain TXT \
-		www.$domain CNAME www.$domain A \
-		$domain MX mx.$domain MX |\
+	dig $domain A \
+		$domain TXT \
+		www.$domain CNAME \
+	   	www.$domain A \
+		$domain MX \
+		mx.$domain MX \
+		$domain NS |\
 	grep -v -e ^';' -e '^$' |\
 	awk '{ printf "%-30s\t%s\n",$1,substr($0, index($0, $3))}' |\
 	sort | uniq
