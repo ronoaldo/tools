@@ -289,10 +289,10 @@ augroup filemapping
   " Go AppEngine support via 'goapp'
   if executable('goapp')
     au BufRead,BufNewFile *.go setlocal makeprg=goapp\ test\ -c
-    au BufRead,BufNewFile *.go let g:syntastic_go_checkers=['goapp', 'govet']
+    au BufRead,BufNewFile *.go let g:syntastic_go_checkers=['goapp', 'govet', 'golint']
   else
     au BufRead,BufNewFile *.go setlocal makeprg=go\ test\ -c
-    au BufRead,BufNewFile *.go let g:syntastic_go_checkers=['go', 'govet']
+    au BufRead,BufNewFile *.go let g:syntastic_go_checkers=['go', 'govet', 'golint']
   end
 
   " Conveniencia para revisar o diff antes do commit
