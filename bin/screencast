@@ -1,0 +1,55 @@
+#!/bin/bash
+#
+# Screencast Recording Script using Libav
+#
+set -e
+
+# Global variables and setup
+video="screencast-$(date +%Y%m%d-%H%M%S).avi"
+
+# Detect desktop dimensions
+width="$(xwininfo -root | grep Width | awk '{print $2}')"
+height="$(xwininfo -root | grep Height | awk '{print $2}')"
+
+# Launch webcam
+echo "[I] Launching avplay ..."
+avplay \
+	-f video4linux2 -video_size 320x240 \
+	-window_title Camera /dev/video0 >& /tmp/camera.log &
+CAM_PID=$!
+echo -n "[I] Waiting for camera ..."
+while ! wmctrl -l | grep -q Camera ; do
+	echo -n "."
+	sleep 1
+	# Check if camera is running 
+	if ! ps $CAM_PID >/dev/null ; then
+		echo "[E] Camera not running. Aborting."
+		exit 1
+	fi
+done
+echo
+# Position the camera window at the right-bottom corner
+wmctrl -r Camera -e 0,$(($width - 320)),$(($height - 300)),320,240
+wmctrl -r Camera -b add,above
+
+# Launch avcocodec
+avconv \
+	-f x11grab -s ${width}x${height} -r 25 -i $DISPLAY -pre lossless_ultrafast \
+	-f alsa -i pulse \
+	-acodec libmp3lame -vcodec libx264 \
+	-threads 0 \
+	$video >& /tmp/recording.log &
+REC_PID=$!
+
+# Wait until camera is closed
+echo "[I] Recording... Close the camera window to finish."
+while wmctrl -l | grep -q Camera ; do
+	sleep 1
+	if ! ps $REC_PID >/dev/null ; then
+		kill -9 $CAM_PID || true
+		echo "[E] Recorder not running. Aborting ..."
+		exit 2
+	fi
+done
+kill -9 $REC_PID || true
+echo "[I] Screencast recorded. Filename $video"
