@@ -382,6 +382,9 @@ vnoremap <leader>j :m'>+1<cr>gv=gv
 " Duplicate line/block down: \y
 nnoremap <leader>y :t.<cr>
 vnoremap <leader>y :t'>.<cr>gv=gv
+" Navigate by errors
+call KeyMap("<", ":lprev", 1)
+call KeyMap(">", ":lnext", 1)
 
 " Configurações padrão para usar no Vim/GVim
 filetype on
