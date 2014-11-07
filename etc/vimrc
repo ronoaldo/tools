@@ -368,7 +368,7 @@ call KeyMap("<Leader>+", ":exe \"vertical resize \" . (winheight(0) * 3/2)<CR>",
 " \- decrease window vertical size
 call KeyMap("<Leader>-", ":exe \"vertical resize \" . (winheight(0) * 2/3)<CR>", 0)
 " gt Run Goapp Tests
-call KeyMap("gt", ":GoappTest", 0)
+call KeyMap("<Leader>t", ":GoappTest", 0)
 " Omnicomplete
 inoremap <Leader>, <C-X><C-O>
 inoremap <C-Space> <C-X><C-O>
