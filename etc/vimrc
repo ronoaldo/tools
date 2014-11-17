@@ -337,6 +337,10 @@ command! -nargs=* GoappTest call GoappTest()
 " Find
 command! -nargs=1 Find :call Find("<args>")
 
+" Javascript/JSON
+" Function to format json files usint python module
+com! FormatJSON %!python -m json.tool
+
 " Keyboard and Shortcuts
 let mapleader=","
 " \s save
