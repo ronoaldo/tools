@@ -15,7 +15,7 @@
 #   limitations under the License.
 
 
-""" BSD-mailx like python utility for Gmail """
+""" Sendmail like python utility for Gmail """
 
 import smtplib
 import getpass
@@ -24,17 +24,34 @@ import ConfigParser
 import base64
 import os
 
-from email.mime.text import MIMEText
+import email
 
 def sendmail(sender, recipient, subject, body,
         server='smtp.gmail.com', port=465,
         username='', password=''):
     """ Sends a new e-mail via SMTP """
-    msg = MIMEText(body)
-    msg['Subject'] = subject
+    msg = email.message_from_string(body)
+    if subject:
+        del msg['Subject']
+        msg['Subject'] = subject
+    if recipient:
+        del msg['To']
+        msg['To'] = recipient
+    del msg['From']
     msg['From'] = sender
-    msg['To'] = recipient
-    msg['Content-Type'] = 'text/plain'
+
+    # Fix for appengine dev_appserver.py:
+    if not msg.is_multipart():
+        try:
+            if msg.get_payload().index('Content-Type: text/html') > 0:
+                for line in msg.get_payload().split('\n'):
+                    if line.startswith('--==='):
+                        boundary = line.split('--')[1].strip()
+                        msg.add_header('Content-Type', 'multipart/mixed')
+                        msg.set_boundary(boundary)
+                        break
+        except:
+            pass
 
     session = smtplib.SMTP_SSL(server)
     session.login(username, password)
@@ -51,12 +68,11 @@ if __name__ == '__main__':
     body = ""
     line = raw_input()
     while line <> '.':
-        body += line + '\r\n'
         try:
             line = raw_input()
         except EOFError:
             break
-
+        body += line + '\r\n'
     cfg = ConfigParser.ConfigParser()
     cfg.read(os.path.expanduser('~/.mailrc'))
     sender = cfg.get('mail', 'sender')
