@@ -253,6 +253,10 @@ function! Find(name)
   execute ":split ".l:line
 endfunction
 
+function! FormatJSON()
+  %!python -m json.tool
+endfunction
+
 " Default options for various file types
 augroup filemapping
   au!
@@ -339,7 +343,7 @@ command! -nargs=1 Find :call Find("<args>")
 
 " Javascript/JSON
 " Function to format json files usint python module
-com! FormatJSON %!python -m json.tool
+command! FormatJSON call FormatJSON()
 
 " Keyboard and Shortcuts
 let mapleader=","
@@ -371,8 +375,10 @@ call KeyMap("<Leader>w", ":wincmd W", 0)
 call KeyMap("<Leader>+", ":exe \"vertical resize \" . (winheight(0) * 3/2)<CR>", 0)
 " \- decrease window vertical size
 call KeyMap("<Leader>-", ":exe \"vertical resize \" . (winheight(0) * 2/3)<CR>", 0)
-" gt Run Goapp Tests
+" \t Run Goapp Tests
 call KeyMap("<Leader>t", ":GoappTest", 0)
+" \fj Format JSON file
+call KeyMap("<Leader>fj", ":FormatJSON", 0)
 " Omnicomplete
 inoremap <Leader>, <C-X><C-O>
 inoremap <C-Space> <C-X><C-O>
