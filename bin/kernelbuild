@@ -57,7 +57,8 @@ confirm() {
 # 
 # returns 0 if properly installed, 1 otherwise
 is_pkg_installed() {
-	dpkg --status $1 | grep -q "install ok installed"
+	dpkg --status $1 | grep -q "install ok installed" 2>/dev/null
+	return $?
 }
 
 # Install all build dependencies for the kernel, that aren't
@@ -71,7 +72,7 @@ install_build_dependencies() {
 	done
 	if [ ! -z "$to_install" ] ; then
 		info "Installing build dependencies '$to_install' ..."
-		$SUDO apt-get install $pkg
+		$SUDO apt-get install $to_install
 	fi
 }
 
