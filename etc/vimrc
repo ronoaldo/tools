@@ -1,69 +1,299 @@
-" rono.vim
-"
-" Copyright (2013) Ronoalado JLP (http://www.ronoaldo.net)
-"
-" Contributions:
-"   Filipe Peixoto (http://www.filipenos.net)
-"
-" License:
-"   Creative Commons CC-BY-SA
-"
+"==============================================================================
+" Updated vimrc based on the Nitrous.IO vimrc for
+" the new docker-based Nitrous Pro version.
 
-" Vundle - Plugin setup
+"------------------------------------------------------------------------------
+set nocompatible
 filetype off
-
-" Auto-setup of Vundle:
-" Ref: http://www.erikzaadi.com/2012/03/19/auto-installing-vundle-from-your-vimrc/
-let g:vundle_installed=1
-let vundle_readme=expand('~/.vim/bundle/vundle/README.md')
-if !filereadable(vundle_readme)
-  echo "Installing Vundle..."
-  echo ""
-  silent !mkdir -p ~/.vim/bundle
-  silent !git clone https://github.com/gmarik/vundle.git ~/.vim/bundle/vundle
-  let g:vundle_installed=0
-endif
-
-set runtimepath+=~/.vim/bundle/vundle/
-call vundle#rc()
-
-" Basic plugins
+set rtp+=~/.vim/bundle/vundle
+call vundle#begin()
+"------------------------------------------------------------------------------
 Plugin 'gmarik/vundle'
-" Snippets for quick code editing
-Plugin 'snipMate'
-" Some custom snippets
-Plugin 'https://bitbucket.org/ronoaldo/custom-vim-snippets'
-" Awesome file navigation
+
+Plugin 'tpope/vim-unimpaired'
+Plugin 'tpope/vim-fugitive'
+Plugin 'Lokaltog/vim-easymotion'
 Plugin 'scrooloose/nerdtree'
-" Syntax check for various files
-Plugin 'scrooloose/syntastic'
-" Tag navigator for current file (Outline)
-Plugin 'majutsushi/tagbar'
-" Fuzzy finder for current tree
+Plugin 'mileszs/ack.vim'
 Plugin 'kien/ctrlp.vim'
-" Helper for open/close tags and other tools
-Plugin 'tpope/vim-surround'
-" Lots of color schemes
-Plugin 'flazz/vim-colorschemes'
-Plugin 'ScrollColors'
-" Go code completion integration
+Plugin 'vim-scripts/bufkill.vim'
+
+Plugin 'scrooloose/nerdcommenter'
+Plugin 'scrooloose/syntastic'
+Plugin 'vim-scripts/Rename2'
+
+Plugin 'nathanaelkane/vim-indent-guides'
+Plugin 'altercation/vim-colors-solarized'
+Plugin 'Lokaltog/vim-powerline'
+
+Plugin 'tpope/vim-git'
+Plugin 'fatih/vim-go'
+
+Plugin 'pangloss/vim-javascript'
+Plugin 'othree/html5.vim'
+Plugin 'hail2u/vim-css3-syntax'
+Plugin 'tpope/vim-markdown'
+Plugin 'timcharper/textile.vim'
+Plugin 'vim-scripts/csv.vim'
+Plugin 'snipMate'
+Plugin 'https://bitbucket.org/ronoaldo/custom-vim-snippets'
 Plugin 'Blackrush/vim-gocode'
-" Syntax Hilight
+Plugin 'tpope/vim-surround'
 Plugin 'ekalinin/Dockerfile.vim'
 Plugin 'velocity.vim'
-Plugin 'groenewege/vim-less'
 
-" Install plugins if this is the first run
-if g:vundle_installed == 0
-  echo "Installing Plugins. Please ignore key map erros, if any..."
-  echo ""
-  :PluginInstall!
-  echo "Plugin setup completed"
+" All of your Plugins must be added before the following line
+call vundle#end()            " required
+filetype plugin indent on    " required
+" To ignore plugin indent changes, instead use:
+"filetype plugin on
+"
+" Brief help
+" :PluginList          - list configured plugins
+" :PluginInstall(!)    - install (update) plugins
+" :PluginSearch(!) foo - search (or refresh cache first) for foo
+" :PluginClean(!)      - confirm (or auto-approve) removal of unused plugins
+"
+" see :h vundle for more details or wiki for FAQ
+" Put your non-Plugin stuff after this line
+
+"------------------------------------------------------------------------------
+" basic
+"
+set number
+set ruler          " show line and column number
+syntax enable
+set encoding=utf-8
+set visualbell     " shut vim up
+set noerrorbells
+set history=1000
+set autoread
+
+"------------------------------------------------------------------------------
+" editing
+"
+set showmatch      " Show matching brackets
+"set matchtime=5    " bracket blinking
+set showcmd        " show incomplete commands in lower right hand corner
+set showmode
+set hidden         " current buffer can be put to the background without writing to disk
+
+" folds
+set foldmethod=indent
+set foldnestmax=3
+set nofoldenable
+
+"------------------------------------------------------------------------------
+" whitespaces
+"
+set autoindent
+set smartindent
+set smarttab     " smarter tab levels
+set nowrap       " don't wrap lines
+set textwidth=0
+set shiftwidth=2 " autoindent is two spaces
+set softtabstop=2
+set tabstop=2    " a tab is two spaces
+set backspace=indent,eol,start " backspace through everything
+
+"------------------------------------------------------------------------------
+" searching
+"
+set hlsearch   " highlight searches
+set incsearch  " incremental searching
+set ignorecase " searches are case insensitive
+set smartcase  " unless there is one capital letter
+
+" scrolling
+set scrolloff=5
+set sidescrolloff=5
+set sidescroll=1
+
+"------------------------------------------------------------------------------
+" wild
+"
+set wildmode=list:longest
+set wildmenu
+set wildignore=*.o,*.out,*.obj,*.class
+set wildignore+=*.swp,*~,._*
+set wildignore+=*.png,*.jpg,*.gif
+set wildignore+=*.zip,*.tar.gz,*.tar.bz2,*.rar,*.tar.xz
+set wildignore+=.git,.svn
+set wildignore+=*vim/backups*
+set wildignore+=*sass-cache*
+set wildignore+=*DS_Store*
+set wildignore+=*/vendor/assets/**
+set wildignore+=*/vendor/rails/**
+set wildignore+=*/vendor/cache/**
+set wildignore+=*/vendor/bundle/**
+set wildignore+=*/vendor/submodules/**
+set wildignore+=*/vendor/plugins/**
+set wildignore+=*/vendor/gems/**
+set wildignore+=*/.bundle/**
+set wildignore+=*.gem
+set wildignore+=*/log/**
+set wildignore+=*/tmp/**
+set wildignore+=*/_vendor/**
+
+"------------------------------------------------------------------------------
+" backup & swap
+"
+set noswapfile
+set nobackup
+set nowb
+
+"persistent undo
+silent !mkdir ~/.vim/backups > /dev/null 2>&1
+set undodir=~/.vim/backups
+set undofile
+
+"colorscheme
+let g:solarized_termcolors=256
+let g:solarized_termtrans=1
+let g:solarized_visibility="high"
+set background=dark
+silent! colorscheme solarized
+
+"------------------------------------------------------------------------------
+" filetypes
+" https://raw.github.com/carlhuda/janus/master/janus/vim/core/before/plugin/filetypes.vim
+"
+function! s:setupWrapping()
+  set wrap
+  set linebreak
+  set textwidth=72
+  set nolist
+endfunction
+
+filetype plugin indent on " Turn on filetype plugins (:help filetype-plugin)
+
+" In Makefiles, use real tabs, not tabs expanded to spaces
+au FileType make set noexpandtab
+
+" make Python follow PEP8 ( http://www.python.org/dev/peps/pep-0008/ )
+au FileType python set softtabstop=4 tabstop=4 shiftwidth=4 textwidth=79
+
+" clean trailing spaces
+"au BufWritePre * kz|:%s/\s\+$//e|'z
+
+" Remember last location in file, but not for commit messages.
+" see :help last-position-jump
+au BufReadPost * if &filetype !~ '^git\c' && line("'\"") > 0 && line("'\"") <= line("$")
+  \| exe "normal! g`\"" | endif
+
+au BufNewFile,BufRead *.{md,markdown,mdown,mkd,mkdn,txt} setf markdown | call s:setupWrapping()
+au BufNewFile,BufRead *.json set ft=javascript
+
+"------------------------------------------------------------------------------
+if has("statusline") && !&cp
+  set laststatus=2
+  set noequalalways
 endif
 
-filetype plugin indent on
+"------------------------------------------------------------------------------
+" other settings
+"
 
-" Tabs
+" ack-vim
+let g:ackprg="ag --nogroup --nocolor --column"
+
+" https://github.com/carlhuda/janus/blob/master/janus/vim/tools/janus/after/plugin/syntastic.vim
+let g:syntastic_enable_signs=1
+let g:syntastic_quiet_messages = {'level': 'warnings'}
+let g:syntastic_auto_loc_list=2
+
+""" nerdtree
+let NERDTreeIgnore=['\.pyc$', '\.pyo$', '\.rbc$', '\.rbo$', '\.class$', '\.o$', '\~$']
+let NERDTreeHijackNetrw = 0
+
+augroup AuNERDTreeCmd
+autocmd AuNERDTreeCmd VimEnter * call s:CdIfDirectory(expand("<amatch>"))
+autocmd AuNERDTreeCmd FocusGained * call s:UpdateNERDTree()
+
+" If the parameter is a directory, cd into it
+function s:CdIfDirectory(directory)
+  let explicitDirectory = isdirectory(a:directory)
+  let directory = explicitDirectory || empty(a:directory)
+
+  if explicitDirectory
+    exe "cd " . fnameescape(a:directory)
+  endif
+
+  " Allows reading from stdin
+  " ex: git diff | mvim -R -
+  if strlen(a:directory) == 0
+    return
+  endif
+
+  if directory
+    NERDTree
+    wincmd p
+    bd
+  endif
+
+  if explicitDirectory
+    wincmd p
+  endif
+endfunction
+
+" NERDTree utility function
+function s:UpdateNERDTree(...)
+  let stay = 0
+
+  if(exists("a:1"))
+    let stay = a:1
+  end
+
+  if exists("t:NERDTreeBufName")
+    let nr = bufwinnr(t:NERDTreeBufName)
+    if nr != -1
+      exe nr . "wincmd w"
+      exe substitute(mapcheck("R"), "<CR>", "", "")
+      if !stay
+        wincmd p
+      end
+    endif
+  endif
+endfunction
+"""""
+
+" Default mapping, <leader>n
+autocmd VimEnter * silent! lcd %:p:h
+
+"------------------------------------------------------------------------------
+" mappings (kept to minimal)
+
+map <C-c> <ESC>
+"let mapleader=","
+
+" much more natural cursor movement when wrapping lines are present
+map j gj
+map k gk
+map <Down> gj
+map <Up> gk
+
+" ctrl-p
+map <C-t> :CtrlP<CR>
+imap <C-t> <ESC>:CtrlP<CR>
+map <C-p> :CtrlP<CR>
+imap <C-p> <ESC>:CtrlP<CR>
+
+" unimpaired
+" Bubble single lines
+nmap <C-k> [e
+nmap <C-j> ]e
+
+" Bubble multiple lines
+vmap <C-k> [egv
+vmap <C-j> ]egv
+
+" nerd tree
+map <leader>n :NERDTreeToggle<CR>
+
+" nerd commenter
+map <leader>/ <plug>NERDCommenterToggle<CR>
+
+" Tab helper functions
 fu! SetupNormalTabs()
   setlocal sw=4 ts=4 st=4 noet si ai
 endfu
@@ -76,12 +306,12 @@ fu! Setup2SpaceTabs()
   setlocal sw=2 ts=2 st=2 et si ai
 endfu
 
-" Messages
+" Message helper
 fu! Info(msg)
   execute "echom '[ " . a:msg . " ]'"
 endfu
 
-" All-modes shortcuts
+" All-modes shortcut helper function
 fu! KeyMap(key, action, insert_mode)
   execute "noremap  <silent> " . a:key . " " . a:action . "<CR>"
   execute "vnoremap <silent> " . a:key . " <C-C>" . a:action . "<CR>"
@@ -121,7 +351,7 @@ fu! TempWindow(name, clear, mode) abort
   endif
 endfu
 
-" Mercurial 
+" Mercurial helper functions
 fu! HgPull()
   call Info("Pulling changes from remote repository ...")
   !hg pull
@@ -194,7 +424,7 @@ fu! MavenCtags()
   echo "Tag path: " . &tags
 endfu
 
-" CTags 
+" CTags
 fu! Ctags()
   call Info("Indexing current directory ...")
   let ctags = "!rm -vf ./.tags && find ./ -type f |"
@@ -207,7 +437,7 @@ fu! Ctags()
   echo "Tag path " . &tags
 endfu
 
-" Golang
+" Google App Engine Go
 function! GoappTest()
   let test_line = search("func Test", "bs")
   ''
@@ -286,7 +516,7 @@ augroup filemapping
   au BufRead,BufNewFile *.java call SetupNormalTabs() | setlocal sw=2 ts=2
   " Bean shell
   au BufReadPost,BufNewFile *.bsh setlocal filetype=java
-  " Coffee 
+  " Coffee
   au BufRead,BufNewFile *.coffee call SetupSpaceTabs()
   au FileType coffee call SetupSpaceTabs()
 
@@ -330,7 +560,7 @@ command! -nargs=+ Mvn call Mvn("<args>")
 command! MavenCtags   call MavenCtags()
 command! MavenBuild   :Mvn clean package
 command! MavenTest    call Mvn("-o", "test", "-DskipTests=false", "-Dtest=".expand("%:t:r"), "-DfailIfNoTests=true")
-command! MavenTestAll :Mvn -o test 
+command! MavenTestAll :Mvn -o test
 command! MavenInstall :Mvn -o clean install
 command! MavenClean   :Mvn -o clean
 command! MavenDebug   call MavenDebug(5005)
@@ -369,7 +599,7 @@ call KeyMap("<C-F10>", ":TagbarToggle", 1)
 call KeyMap("<C-S-F>", ":normal gg=G", 1)
 " \f format code
 call KeyMap("<Leader>f", ":normal gg=G", 0)
-" \w change window 
+" \w change window
 call KeyMap("<Leader>w", ":wincmd W", 0)
 " \+ increase window vertical size
 call KeyMap("<Leader>+", ":exe \"vertical resize \" . (winheight(0) * 3/2)<CR>", 0)
@@ -396,29 +626,6 @@ vnoremap <leader>y :t'>.<cr>gv=gv
 call KeyMap("<leader>p", ":lprev", 0)
 call KeyMap("<leader>n", ":lnext", 0)
 
-" Configurações padrão para usar no Vim/GVim
-filetype on
-set modeline
-set modelines=5
-set nomousehide
-set nowrap
-set number
-set hlsearch
-set sw=4 ts=4
-
-" Color and Syntax
-colorscheme default
-syntax on
-
-" Mouse/scroll
-set mouse=a
-set scrolloff=2
-
 " Goodies with Syntastic
 let g:syntastic_full_redraws=1
 let g:syntastic_auto_loc_list=0
-
-" Per-project .vimrc
-" From: http://damien.lespiau.name/blog/2009/03/18/per-project-vimrc/comment-page-1/
-set exrc
-set secure
