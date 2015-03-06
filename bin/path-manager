@@ -50,10 +50,12 @@ contains() {
 reload_path() {
 	touch $HOME/.path
 
-	display_path | grep -v ^$ > /tmp/$$.path
+	# Create a temporary list of paths
+	cat /dev/null > /tmp/$$.path
 	cat $HOME/.path | grep -v ^$ >> /tmp/$$.path
+	display_path    | grep -v ^$ >> /tmp/$$.path
 	
-	#debug "/tmp/$$.path= [ $( cat /tmp/$$.path ) ]"
+	#debug "/tmp/$$.path= [ $( cat /tmp/$$.path ) ]"
 
 	path=
 	while read p ; do

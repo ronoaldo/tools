@@ -41,6 +41,7 @@ Plugin 'Blackrush/vim-gocode'
 Plugin 'tpope/vim-surround'
 Plugin 'ekalinin/Dockerfile.vim'
 Plugin 'velocity.vim'
+Plugin 'majutsushi/tagbar'
 
 " All of your Plugins must be added before the following line
 call vundle#end()            " required
@@ -258,7 +259,7 @@ endfunction
 """""
 
 " Default mapping, <leader>n
-autocmd VimEnter * silent! lcd %:p:h
+"autocmd VimEnter * silent! lcd %:p:h
 
 "------------------------------------------------------------------------------
 " mappings (kept to minimal)
