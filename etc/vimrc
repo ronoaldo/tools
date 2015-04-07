@@ -42,6 +42,7 @@ Plugin 'tpope/vim-surround'
 Plugin 'ekalinin/Dockerfile.vim'
 Plugin 'velocity.vim'
 Plugin 'majutsushi/tagbar'
+Plugin 'editorconfig/editorconfig-vim'
 
 " All of your Plugins must be added before the following line
 call vundle#end()            " required
@@ -83,19 +84,6 @@ set hidden         " current buffer can be put to the background without writing
 set foldmethod=indent
 set foldnestmax=3
 set nofoldenable
-
-"------------------------------------------------------------------------------
-" whitespaces
-"
-set autoindent
-set smartindent
-set smarttab     " smarter tab levels
-set nowrap       " don't wrap lines
-set textwidth=0
-set shiftwidth=2 " autoindent is two spaces
-set softtabstop=2
-set tabstop=2    " a tab is two spaces
-set backspace=indent,eol,start " backspace through everything
 
 "------------------------------------------------------------------------------
 " searching
@@ -168,21 +156,11 @@ endfunction
 
 filetype plugin indent on " Turn on filetype plugins (:help filetype-plugin)
 
-" In Makefiles, use real tabs, not tabs expanded to spaces
-au FileType make set noexpandtab
-
-" make Python follow PEP8 ( http://www.python.org/dev/peps/pep-0008/ )
-au FileType python set softtabstop=4 tabstop=4 shiftwidth=4 textwidth=79
-
-" clean trailing spaces
-"au BufWritePre * kz|:%s/\s\+$//e|'z
-
 " Remember last location in file, but not for commit messages.
 " see :help last-position-jump
 au BufReadPost * if &filetype !~ '^git\c' && line("'\"") > 0 && line("'\"") <= line("$")
   \| exe "normal! g`\"" | endif
 
-au BufNewFile,BufRead *.{md,markdown,mdown,mkd,mkdn,txt} setf markdown | call s:setupWrapping()
 au BufNewFile,BufRead *.json set ft=javascript
 
 "------------------------------------------------------------------------------
@@ -490,37 +468,13 @@ endfunction
 
 " Default options for various file types
 augroup filemapping
-  au!
-  " Python
-  au BufRead,BufNewFile *.py call SetupSpaceTabs()
-  au FileType python call SetupSpaceTabs()
-  " Makefiles
-  au BufRead,BufNewFile Makefile call SetupNormalTabs()
-  au BufRead,BufNewFile makefile call SetupNormalTabs()
-  " XML
-  au BufRead,BufNewFile *.xml call SetupNormalTabs()
-  au BufRead,BufNewFile *.xml setlocal shiftwidth=2 tabstop=2
-  au FileType xml call SetupNormalTabs()
-  au FileType xml setlocal shiftwidth=2 tabstop=2
-  " TXT
-  au BufRead,BufNewFile *.txt call Setup2SpaceTabs()
-  " Velocity
+  " Velocity file types
   au BufRead,BufNewFile *.vm setlocal filetype=velocity
-  " Vim
-  au BufRead,BufNewFile *.vimrc call Setup2SpaceTabs()
-  au BufRead,BufNewFile vimrc call Setup2SpaceTabs()
-  au FileType vim call Setup2SpaceTabs()
-  " Java
+  " Java settings  
   au BufRead,BufNewFile *.java compiler javac
   au BufRead,BufNewFile *.java setlocal makeprg=javac\ %
   au BufRead,BufNewFile *.java let g:syntastic_java_javac_options = "-Xlint -encoding utf-8"
-  au BufRead,BufNewFile *.java call SetupNormalTabs() | setlocal sw=2 ts=2
-  " Bean shell
-  au BufReadPost,BufNewFile *.bsh setlocal filetype=java
-  " Coffee
-  au BufRead,BufNewFile *.coffee call SetupSpaceTabs()
-  au FileType coffee call SetupSpaceTabs()
-
+  au BufRead,BufNewFile *.bsh setlocal filetype=java
   " Go AppEngine support via 'goapp'
   if executable('goapp')
     au BufRead,BufNewFile *.go setlocal makeprg=goapp\ test\ -c
