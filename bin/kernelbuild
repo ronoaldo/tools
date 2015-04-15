@@ -79,7 +79,16 @@ install_build_dependencies() {
 fetch_kernel() {
 	if [ ! -f linux-$KVER.tar.xz ] ; then
 		info "Downloading kernel sources ..."
-		wget -c "http://www.kernel.org/pub/linux/kernel/v3.x/linux-$KVER.tar.xz"
+		case $KVER in
+			3*)
+				wget -c "http://www.kernel.org/pub/linux/kernel/v3.x/linux-$KVER.tar.xz"
+				;;
+			4*)
+				wget -c "http://www.kernel.org/pub/linux/kernel/v4.x/linux-$KVER.tar.xz"
+				;;
+			*)
+				echo "Unsuported version: $KVER"
+		esac
 	fi
 }
 
@@ -107,9 +116,9 @@ check_current_config() {
 safe_config() {
 	check_current_config
 	info "Performing safe configuration, based on running kernel config ..."
-	cp /boot/config-$( uname -r ) .config -v
-	yes "" | make oldconfig > config.new
-	info "Configuration done. Review linux-$KVER/config.new to see what was chosen."
+	info "> make olddefconfig"
+	yes "" | make olddefconfig
+	info "Configuration done. Review linux-$KVER/config to see what was chosen."
 	
 	if confirm "Do you want to run make menuconfig to do manual settings?" ; then
 		make menuconfig
@@ -127,7 +136,7 @@ optimized_config() {
 
 	cp /boot/config-$( uname -r ) .config -v
 	make localmodconfig
-	info "Configuration done. Review linux-$KVER/config.new to see what was chosen."
+	info "Configuration done. Review linux-$KVER/.config to see what was chosen."
 	
 	if confirm "Do you want to run make menuconfig to do manual settings?" ; then
 		make menuconfig
@@ -146,18 +155,25 @@ local_version() {
 
 # Starts the kernel build process
 build_packages() {
-	REV="$KVER~$(local_version)custom$BUILD"
+	case $KVER in
+		*-*)
+			REV="${KVER/-/\~}~$(local_version)custom$BUILD"
+			;;
+		*)
+			REV="$KVER~$(local_version)custom$BUILD"
+			;;
+	esac
 	
 	info "Your kernel will be compiled now."
 	info "You may want to take one coffee. Or maybe two ..."
-	info " Your kernel revision will be $REV"
+	info "Your kernel revision will be $REV"
 	
 	LOG="linux-image-$REV.build"
 	TIME="linux-image-$REV.build.time"
 
 	/usr/bin/time -p --output "$TIME" --append \
 		fakeroot make-kpkg --initrd --revision="$REV" \
-		$BUILD_ARGS binary 2>&1 | tee $LOG
+		$BUILD_ARGS binary-arch 2>&1 | tee $LOG
 }
 
 usage() {
