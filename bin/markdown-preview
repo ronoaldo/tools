@@ -37,7 +37,7 @@ class MarkdownPreviewHandler(SimpleHTTPServer.SimpleHTTPRequestHandler):
                 self.send_response(200)
                 self.send_header("Content-Type", "text/html")
                 self.end_headers()
-                html = markdown2.markdown(f.read())
+                html = markdown2.markdown(f.read(), extras=['tables'])
                 self.render(self.wfile, html)
         except Exception, e:
             self.send_error(404, "File not found %s (error %s)" % (filename, str(e)))
