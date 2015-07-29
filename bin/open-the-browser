@@ -1,0 +1,18 @@
+#!/bin/bash
+
+# Try Google Chrome first
+if ps -C chrome ; then
+	google-chrome $@
+# ... then Chromiun
+elif ps -C chromiun ; then
+	chromiun $@
+# ... then Firefox
+elif ps -C firefox-bin ; then
+	firefox $@
+# ... then Iceweasel
+elif ps -C iceweasel ; then
+	iceweasel $@
+fi
+
+# No browser is open - just use the user default browser
+x-www-browser $@
