@@ -43,6 +43,7 @@ Plugin 'ekalinin/Dockerfile.vim'
 Plugin 'velocity.vim'
 Plugin 'majutsushi/tagbar'
 Plugin 'editorconfig/editorconfig-vim'
+Plugin 'kchmck/vim-coffee-script'
 
 " All of your Plugins must be added before the following line
 call vundle#end()            " required
