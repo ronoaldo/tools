@@ -131,11 +131,6 @@ set noswapfile
 set nobackup
 set nowb
 
-"persistent undo
-"silent !mkdir ~/.vim/backups > /dev/null 2>&1
-"set undodir=~/.vim/backups
-"set undofile
-
 "colorscheme
 let g:solarized_termcolors=256
 let g:solarized_termtrans=1
@@ -475,14 +470,8 @@ augroup filemapping
   au BufRead,BufNewFile *.java setlocal makeprg=javac\ %
   au BufRead,BufNewFile *.java let g:syntastic_java_javac_options = "-Xlint -encoding utf-8"
   au BufRead,BufNewFile *.bsh setlocal filetype=java
-  " Go AppEngine support via 'goapp'
-  if executable('goapp')
-    au BufRead,BufNewFile *.go setlocal makeprg=goapp\ test\ -c
-    au BufRead,BufNewFile *.go let g:syntastic_go_checkers=['goapp', 'govet', 'golint']
-  else
-    au BufRead,BufNewFile *.go setlocal makeprg=go\ test\ -c
-    au BufRead,BufNewFile *.go let g:syntastic_go_checkers=['go', 'govet', 'golint']
-  end
+  au BufRead,BufNewFile *.go setlocal makeprg=go\ test\ -c
+  au BufRead,BufNewFile *.go let g:syntastic_go_checkers=['govet', 'golint']
 
   " Conveniencia para revisar o diff antes do commit
   au BufRead /tmp/hg-editor-* call HgDiff()
