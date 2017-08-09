@@ -1,0 +1,95 @@
+#!/bin/bash
+
+set -e 
+
+# Exports data from a Big Query table or view from dataset
+# and backup to Cloud Storage.
+# Both schema, view query and table data are exported.
+
+####################
+# Helper functions #
+####################
+
+log() {
+	echo >&2 "[INFO] $(date +%Y-%m-%d-%H:%M:%S) $@"
+}
+
+dump_schema() {
+	bq show --format=prettyjson "${DATASET}.${1}" | jq -M '.schema'
+}
+
+extract_query() {
+	bq show --format=prettyjson "${DATASET}.${1}" | jq -r '.view.query'
+}
+
+legacy_sql() {
+	result="$( bq show --format=prettyjson "${DATASET}.${1}" | jq -r '.view.useLegacySql' )"
+	if [ "$result" = "true" ] ; then
+		# Is legay sql so return shell 0 (success)
+		return 0
+	else
+		# Is not legacy sql, so return shell 1 (fail)
+		return 1
+	fi
+}
+
+########
+# Main #
+########
+
+# Parse args
+export DATASET="$1"       ; shift
+export BUCKET_PREFIX="${1%/}" ; shift
+if [ x"$DATASET" == x"" ] ; then
+	log "Invalid dataset: $DATASET. Exiting ..."
+	exit 1
+fi
+if [ x"$BUCKET_PREFIX" == x"" ] ; then
+	log "Using temporary local folder, this may be severelly ineficient!"
+	export BUCKET_PREFIX="/tmp/$$"
+	mkdir -p $BUCKET_PREFIX
+	log "BUCKET_PREFIX=$BUCKET_PREFIX"
+fi
+
+
+# Loop over dataset
+bq --format=json ls $DATASET | jq -r '.[] | .tableId + " " + .Type' | while read name type ; do
+	log "Processing $name (type='$type')"
+	if [ x"$name" = x"" ] ; then
+		log "* Skipping empty table name ..."
+	fi
+	export FILE_PREFIX="${BUCKET_PREFIX}/${DATASET}"
+	case $type in 
+		"TABLE")
+			schema="${FILE_PREFIX}.table.${name}.schema.json"
+			log "Creating schema: $schema ..."
+			dump_schema "$name" | gsutil cp - $schema
+
+			data="${FILE_PREFIX}.table.${name}.data.json"
+			case $BUCKET_PREFIX in
+				gs://*)
+					log "Extracting to $data"
+					bq extract --destination_format=NEWLINE_DELIMITED_JSON $DATASET.$name $data
+					;;
+				*)
+					log "Ignoring extract for local destination $data"
+					;;
+			esac
+		;;
+		"VIEW")
+			schema="${FILE_PREFIX}.view.${name}.schema.json"
+			log "Creating schema: $schema ..."
+			dump_schema "$name" | gsutil cp - $schema
+
+			query="${FILE_PREFIX}.view.${name}.query.sql"
+			if legacy_sql "${name}" ; then
+				query="${FILE_PREFIX}.view.${name}.legacyquery.sql"
+			fi
+			log "Extracting query: $query ..."
+			extract_query "$name" | gsutil cp - "$query"
+		;;
+	esac
+
+done
+
+log "Done"
