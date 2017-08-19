@@ -1,0 +1,7 @@
+#!/bin/bash
+# https://stackoverflow.com/a/13992867 
+
+file="$1"
+kw="$2"
+
+tar xzf "$file" --to-command "awk '/$kw/ { print ENVIRON[\"TAR_FILENAME\"]; exit }'"
