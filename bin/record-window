@@ -1,0 +1,27 @@
+#!/bin/bash
+
+usage() {
+	echo "Records a window by selecting it with xwininfo."
+	echo "Usage record-window file.mp4"
+}
+
+record_window() {
+	info="/tmp/$$.winfo"
+	LANG=C xwininfo > $info
+
+	x=$(grep 'Absolute upper-left X:' $info | awk '{print $4}')
+	y=$(grep 'Absolute upper-left Y:' $info | awk '{print $4}')
+	w=$(grep 'Width: ' $info | awk '{print $2}')
+	h=$(grep 'Height: ' $info | awk '{print $2}')
+
+	rm $info
+
+	exec ffmpeg -video_size ${w}x${h} -framerate 25 -f x11grab -i :0.0+${x},${y} "$1"
+}
+
+if [ x"$1" == x"" ] ; then
+	usage
+	exit 1
+fi
+
+record_window "$1"

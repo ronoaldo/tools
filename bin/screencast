@@ -26,7 +26,7 @@ start_camera() {
 	fi
 
 	echo "[I] Launching Webcam ..."
-	avplay \
+	ffplay \
 		-f video4linux2 -video_size 320x240 \
 		-window_title Camera $camera 1>> $log 2>> $log &
 	export CAM_PID=$!
@@ -53,7 +53,7 @@ find_audio_source() {
 
 # Launch avcocodec
 start_capture() {
-	cmd="avconv -y \
+	cmd="ffmpeg -y \
 		$(find_audio_source) \
 		-f x11grab -s ${width}x${height} -r 25 -i $DISPLAY \
 		-acodec libvorbis -aq 3 \
