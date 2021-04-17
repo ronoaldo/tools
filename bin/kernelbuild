@@ -16,8 +16,9 @@
 #
 # Easy way to build a linux kernel on Debian
 #
-# Copyright (C) 2013 Ronoaldo JLP <ronoaldo@gmail.com>
+# Copyright (C) 2013-2020 Ronoaldo JLP <ronoaldo@gmail.com>
 
+# Be safe
 set -e
 
 # Allows configuration of default 'run as sudo' command.
@@ -26,19 +27,24 @@ export KVER="latest"
 export BUILD="1"
 export LOG="$PWD/linux-$(date +%Y%d%m-%H%M%S).log"
 
+export COLOR_GREEN='\033[0;32m'
+export COLOR_YELLOW='\033[1;33m'
+export COLOR_RED='\033[0;31m'
+export COLOR_NONE='\033[0m'
+
 # Print a information message
 info() {
-	echo "[ INFO] $*"
+	echo -e "${COLOR_GREEN}[ INFO] $* ${COLOR_NONE}"
 }
 
 # Print a warning message
 warn() {
-	echo "[ WARN] $*"
+	echo -e "${COLOR_YELLOW}[ WARN] $* ${COLOR_NONE}"
 }
 
 # Print an error message
 error() {
-	echo "[ERROR] $*"
+	echo -e "${COLOR_RED}[ERROR] $* ${COLOR_NONE}"
 }
 
 # Prompts the user for a question, and check if 
@@ -57,7 +63,7 @@ confirm() {
 # 
 # returns 0 if properly installed, 1 otherwise
 is_pkg_installed() {
-	dpkg --status $1 | grep -q "install ok installed" 2>/dev/null
+	dpkg --status $1 2>&1 | grep -q "install ok installed" 2>/dev/null
 	return $?
 }
 
@@ -65,31 +71,35 @@ is_pkg_installed() {
 # installed yet.
 install_build_dependencies() {
 	export to_install=""
-	for pkg in kernel-package fakeroot libncurses5-dev ; do
+	for pkg in time gnupg2 build-essential fakeroot ; do
 		if ! is_pkg_installed "$pkg" ; then
 			export to_install="$to_install $pkg"
 		fi
 	done
 	if [ ! -z "$to_install" ] ; then
-		info "Installing build dependencies '$to_install' ..."
+		info "Installing extra build dependencies '$to_install' ..."
 		$SUDO apt-get install $to_install
 	fi
+	info "Checking if build-deps are up-to-date ..."
+	$SUDO apt-get build-dep linux
 }
 
 fetch_kernel() {
-	if [ ! -f linux-$KVER.tar.xz ] ; then
-		info "Downloading kernel sources ..."
-		case $KVER in
-			3*)
-				wget -c "http://www.kernel.org/pub/linux/kernel/v3.x/linux-$KVER.tar.xz"
-				;;
-			4*)
-				wget -c "http://www.kernel.org/pub/linux/kernel/v4.x/linux-$KVER.tar.xz"
-				;;
-			*)
-				echo "Unsuported version: $KVER"
-		esac
-	fi
+	export MAJOR=""
+	case $KVER in
+		5*)
+			export MAJOR=v5.x
+			;;
+		*)
+			echo "Unsuported version: $KVER (Major versions supported are 3.x, 4.x and 5.x"
+			exit 1
+	esac
+	info "Downloading kernel sources for $MAJOR line ($KVER) ... "
+	wget -c "http://www.kernel.org/pub/linux/kernel/$MAJOR/linux-$KVER.tar.xz"
+	wget -c "http://www.kernel.org/pub/linux/kernel/$MAJOR/linux-$KVER.tar.sign"
+	info "Verifying archive integrity... "
+	unxz -c linux-$KVER.tar.xz | gpg --verify linux-$KVER.tar.sign - || exit 2
+	info "Archive downloaded and integrity is good to go!"
 }
 
 unpack_kernel() {
@@ -101,13 +111,24 @@ unpack_kernel() {
 	tar xf linux-$KVER.tar.xz
 }
 
+backup_current_config() {
+	if [ -f .config ] ; then
+		bak="../linux-$KVER.config-$(date +%Y%m%d-%H%M%S)"
+		info "Backing up current .config as $bak"
+		cp -v .config $bak
+	fi
+}
+
 check_current_config() {
 	if [ -f .config ] ; then
-		if confirm "Overwrite .config ?" ; then
-			echo "Backing up current .config as ../config-$(date +%Y%m%d-%H%M%S)"
-		else
-			exit 2
-		fi
+		backup_current_config
+	fi
+}
+
+run_make_menuconfig() {
+	info "Review linux-$KVER/config to confirm the build configuration."
+	if ! confirm "Continue with the current running config? Answer 'no' to configure more options with 'make menuconfig'" ; then
+		make menuconfig
 	fi
 }
 
@@ -115,14 +136,10 @@ check_current_config() {
 # current one.
 safe_config() {
 	check_current_config
-	info "Performing safe configuration, based on running kernel config ..."
-	info "> make olddefconfig"
+
+	info "Performing safe configuration, based on running kernel config and accepting upstream defaults ..."
+	info "Running make olddefconfig"
 	yes "" | make olddefconfig
-	info "Configuration done. Review linux-$KVER/config to see what was chosen."
-	
-	if confirm "Do you want to run make menuconfig to do manual settings?" ; then
-		make menuconfig
-	fi
 }
 
 # Configures built-in for current loaded modules using local config,
@@ -136,11 +153,6 @@ optimized_config() {
 
 	cp /boot/config-$( uname -r ) .config -v
 	make localmodconfig
-	info "Configuration done. Review linux-$KVER/.config to see what was chosen."
-	
-	if confirm "Do you want to run make menuconfig to do manual settings?" ; then
-		make menuconfig
-	fi
 }
 
 local_version() {
@@ -167,13 +179,18 @@ build_packages() {
 	info "Your kernel will be compiled now."
 	info "You may want to take one coffee. Or maybe two ..."
 	info "Your kernel revision will be $REV"
-	
-	LOG="linux-image-$REV.build"
-	TIME="linux-image-$REV.build.time"
 
-	/usr/bin/time -p --output "$TIME" --append \
-		fakeroot make-kpkg --initrd --revision="$REV" \
-		$BUILD_ARGS binary-arch 2>&1 | tee $LOG
+	# This is needed to avoid trying to use debian/keys
+	sed -ri '/CONFIG_SYSTEM_TRUSTED_KEYS/s/=.+/=""/g' .config
+
+	# Run and account used time with the GNU time command	
+	LOG="../linux-image-$REV.log"
+	\time -o $LOG.time -f "Build time for the package: %E" \
+		make bindeb-pkg \
+		$BUILD_ARGS \
+		EXTRAVERSION="-amd64" \
+		KDEB_PKGVERSION=$(make kernelversion)-$REV \
+		DEBEMAIL='ronoaldo@gmail.com' 2>&1 | tee $LOG
 }
 
 usage() {
@@ -215,7 +232,7 @@ while [ $# -gt 0 ] ; do
 
 		--fast)
 			warn "Building with maximal usage of CPU!"
-			export BUILD_ARGS="$BUILD_ARGS -j $(grep -c '^processor' /proc/cpuinfo)"
+			export BUILD_ARGS="$BUILD_ARGS -j$(grep -c '^processor' /proc/cpuinfo)"
 		;;
 
 		--safe-config)
@@ -230,6 +247,11 @@ while [ $# -gt 0 ] ; do
 			shift
 			info "Build number is $1"
 			export BUILD="$1"
+		;;
+		--cpus)
+			shift
+			info "Building with $1 cpus"
+			export BUILD_ARGS="$BUILD_ARGS -j$1"
 		;;
 		*)
 			echo "Unknown argument '$1'"
@@ -253,14 +275,27 @@ esac
 # Configure and build
 info "Building linux kernel version $KVER ..."
 
+info "Checking source and build dependencies"
 install_build_dependencies
 fetch_kernel
 unpack_kernel
-
 cd linux-$KVER
+
+info "Cleaning up kernel build tree (make distclean)"
+backup_current_config
+make distclean
+
+info "Configuring the kernel"
 if [ ! -z $SAFE_CONFIG ] ; then
+	info "Automated config selected: safe config"
 	safe_config
 elif [ ! -z $OPTIMIZED_CONFIG ] ; then
+	info "Automated config selected: optimized config"
 	optimized_config
+else
+	info "No automated config selected. Configure the kernel manually"
 fi
+run_make_menuconfig
+
+info "Building now ... this will take a long time"
 build_packages
