@@ -1,0 +1,38 @@
+#!/bin/bash
+set -x
+#
+# Usage:
+#	virtual-desktop 2 teams
+#
+
+if [ $# -lt 2 ] ; then
+	echo "Usage $(basename $0) SCREEN_COUNT COMMAND"
+	exit 1
+fi
+
+RESOLUTION=${RESOLUTION:-1920X1080}
+MONITORS="$1"
+shift
+CMD="$@"
+
+SCREENS=""
+for i in $(seq 1 $MONITORS) ; do
+	SCREENS="${SCREENS} -screen ${RESOLUTION}"
+done
+
+echo "Starting ${MONITORS} virtual desktops at ${RESOLUTION} (SCREENS=${SCREENS})"
+Xephyr $SCREENS -title "Virtual Desktop" +xinerama :1 &
+export DISPLAY=:1
+
+echo "Setting up monitor layout with xrandr ..."
+xrandr --setmonitor default~1 1920/508x1080/286+0+0 default
+xrandr --setmonitor default~2 1920/508x1080/286+1920+0 none
+xrandr --fb 3840x1080 
+
+echo "Starting window manager"
+sleep 1
+openbox --replace &
+
+echo "Running $CMD ..."
+sleep 1
+$CMD
