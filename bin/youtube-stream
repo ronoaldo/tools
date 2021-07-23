@@ -2,6 +2,7 @@
 set -e
 
 select_window() {
+	# Detects user-clicked window geometry
 	info="/tmp/$$.winfo"
 	LANG=C xwininfo > $info
 
@@ -14,12 +15,19 @@ select_window() {
 }
 
 select_audio_source() {
-	pactl list sources short | grep output | grep -v 'SUSPENDED' | awk '{print $2}'
+	# Detects default output sink monitor
+	DEFAULT_SINK=$(pactl info | grep 'Default Sink' | awk '{print $3}')
+	pactl list sources short | grep -P "$DEFAULT_SINK" | awk '{print $2}'
 }
+
+if [ x"" = x"$1" ] ; then
+	echo "Usage: youtube-stream STREAM_KEY"
+	exit 1
+fi
 
 ffmpeg \
 	-f pulse -ac 2 -i $(select_audio_source) \
 	-f x11grab -framerate 60 $(select_window) \
 	-c:v libx264 -preset medium -b:v 6000k -maxrate 6000k -bufsize 12000k -vf "format=yuv420p" -g 120 \
 	-c:a aac -b:a 128k -ar 44100 \
-	-f flv /tmp/teste.flv
+	-f flv rtmp://a.rtmp.youtube.com/live2/$1
