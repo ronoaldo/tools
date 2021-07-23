@@ -1,0 +1,25 @@
+#!/bin/bash
+set -e
+
+select_window() {
+	info="/tmp/$$.winfo"
+	LANG=C xwininfo > $info
+
+	x=$(grep 'Absolute upper-left X:' $info | awk '{print $4}')
+	y=$(grep 'Absolute upper-left Y:' $info | awk '{print $4}')
+	w=$(grep 'Width: ' $info | awk '{print $2}')
+	h=$(grep 'Height: ' $info | awk '{print $2}')
+
+	echo "-video_size ${w}x${h} -i :0.0+${x},${y}"
+}
+
+select_audio_source() {
+	pactl list sources short | grep output | grep -v 'SUSPENDED' | awk '{print $2}'
+}
+
+ffmpeg \
+	-f pulse -ac 2 -i $(select_audio_source) \
+	-f x11grab -framerate 60 $(select_window) \
+	-c:v libx264 -preset medium -b:v 6000k -maxrate 6000k -bufsize 12000k -vf "format=yuv420p" -g 120 \
+	-c:a aac -b:a 128k -ar 44100 \
+	-f flv /tmp/teste.flv
