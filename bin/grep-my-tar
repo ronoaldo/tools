@@ -1,6 +1,21 @@
 #!/bin/bash
 # https://stackoverflow.com/a/13992867 
 
+usage() {
+    cat <<EOF
+Usage: grep-my-tar TARFILE KEYWORD
+
+This script will help you find a keyword inside all
+files in a .tar/.tar.gz archive. It will use the Awk
+command to search for keyword and print the filename
+when the keyword matches.
+EOF
+}
+
+case $1 in
+    -h|--help) usage; exit 1 ;;
+esac
+
 file="$1"
 kw="$2"
 

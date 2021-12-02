@@ -21,6 +21,17 @@ current_layout() {
 	log "Use $SCRIPT 3x1 | 2x1 | 1x1 to change"
 }
 
+usage() {
+	cat <<EOF
+Usage: split-monitor LAYOUT
+
+Where LAYOUT can be one of:
+	1x1: resets to a single split
+	2x1: split the screen in half
+	3x1: split the screen in three parts
+EOF
+}
+
 #
 # Main
 # 
@@ -36,7 +47,7 @@ Wmm=$(grep -o -P '[0-9]+mm x' <<<"$QUERY" | cut -f 1 -d' ' | tr -d 'm')
 H=$(grep -o -P 'x[0-9]+' <<<"$QUERY" | tr -d x)
 Hmm=$(grep -o -P '[0-9]+mm$' <<<"$QUERY" | cut -f 1 -d' ' | tr -d 'm')
 NAME=${QUERY%% *}
-log "Primary output $NAME (Res: ${W}x${H} ; Size: ${Wmm}x${Hmm}mm)"
+#log "Primary output $NAME (Res: ${W}x${H} ; Size: ${Wmm}x${Hmm}mm)"
 
 case $1 in
 	1x1)
@@ -63,6 +74,7 @@ case $1 in
 		xrandr --setmonitor $NAME~3 ${w}/${wmm}x$H/$Hmm+$((w+w))+0 none
 		xrandr --fb ${W}x${H}
 	;;
+	*) usage ; exit 1 ;;
 esac
 current_layout
 

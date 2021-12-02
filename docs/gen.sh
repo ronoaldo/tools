@@ -17,9 +17,9 @@ esac
 
 for tool in ../bin/* ; do
     name=$(basename $tool)
-	echo "## $name"
+	echo "## \`\`$name\`\`"
     echo
-    echo "Uses $(head -n 1 $tool) as interpreter"
+    echo "Uses \`$(head -n 1 $tool)\` as interpreter"
     echo
     echo '```'
 	$tool --help

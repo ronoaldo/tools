@@ -8,6 +8,15 @@
 #   colors (default + 8 escapes).
 #
 
+usage() {
+  cat <<EOF
+Usage: colorscheme
+
+Prints the foreground/background colors in your terminal.
+EOF
+}
+case $1 in -h|--help) usage; exit 1 ;; esac
+
 T='▆ ▆'   # The test text
 
 echo -e "\n                 40m     41m     42m     43m\

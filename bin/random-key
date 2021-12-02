@@ -2,6 +2,10 @@
 
 # Source: http://serverfault.com/a/481171
 
+
+usage() { echo "Usage: random-key [KEY-SIZE]"; }
+case $1 in -h|--help) usage ; exit 1 ;; esac
+
 if [ -z $1 ] ; then
 	len=32
 else

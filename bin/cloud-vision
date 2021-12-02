@@ -7,8 +7,7 @@ if [ x"$DEBUG" == x"true" ] ; then
 	set -x
 fi
 if [ x"$CLOUD_VISION_KEY" == x"" ] ; then
-	echo "Set your CLOUD_VISION_KEY environment"
-	exit 1
+	echo >&2 "WARNING: Set your CLOUD_VISION_KEY environment"
 fi
 
 KEY="${CLOUD_VISION_KEY:-Please set your CLOUD_VISION_KEY environment}"

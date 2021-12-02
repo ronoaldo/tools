@@ -51,7 +51,7 @@ confirm_cli() {
 # Prints help page and exists
 usage() {
 	cat <<EOF
-Use $0 [--no-fail-fast|--help|-h] cli
+Usage: $(basename $0) [--no-fail-fast|--help|-h] COMMAND
 
 Where:
 	--no-fail-fast

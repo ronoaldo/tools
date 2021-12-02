@@ -33,9 +33,23 @@ legacy_sql() {
 	fi
 }
 
+usage() {
+	cat <<EOF
+Usage bqbkp DATASET [gs://BUCKET/[PREFIX] | PREFIX]
+
+DATASET will be backed up either in a local folder if PREFIX
+doesn't start with gs://, otherwise, it will be backed up to
+the provided bucket and prefix path.
+EOF
+}
+
 ########
 # Main #
 ########
+
+case $1 in
+	-h|--help) usage ;;
+esac
 
 # Parse args
 export DATASET="$1"       ; shift

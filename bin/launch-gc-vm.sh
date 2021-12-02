@@ -15,11 +15,12 @@ trap "rm $YAML" KILL EXIT
 log() { echo "[launch-gc-vm] $@" ; }
 die() { log "$@" ; exit 1 ; }
 gcloud="gcloud --project=$PROJ"
-
+usage() { echo "Usage: launch-gc-vm.sh PROJECT_ID ZONE VM_NAME"; }
 
 #
 # Main
 #
+case $1 in -h|--help) usage ; exit 1;; esac
 log "Launching instance $PROJ/$ZONE/$VM ..."
 
 export status="$($gcloud compute instances describe --zone=$ZONE --format="value(status)" $VM)"
