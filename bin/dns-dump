@@ -28,8 +28,14 @@ dig_query() {
 	sort | uniq
 }
 
-if [ -z $1 ] ; then
-	echo "Use $0 naked_domain"
-fi
+usage() {
+	cat <<EOF
+Use $0 NAKED_DOMAIN
+
+This will print out a set of common DNS records for the given
+naked domain and the following sub-domains: www. mx.
+EOF
+}
+case $1 in -h|--help) usage; exit 1 ;; esac
 
 dig_query "$1"

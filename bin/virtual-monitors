@@ -1,5 +1,4 @@
 #!/bin/bash
-set -x
 #
 # Usage:
 #	virtual-desktop 2 teams

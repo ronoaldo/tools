@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python2
 # -*- coding:utf-8 -*-
 #
 # Copyright 2013 Ronoaldo JLP (http://www.ronoaldo.net)
@@ -29,6 +29,9 @@ class MavenCentralSearch(object):
     SOLR = "http://search.maven.org/solrsearch/select?q=%(terms)s&rows=20&wt=json"
 
     def search(self, terms):
+        if "-h" in terms or "--help" in terms:
+            print "Usage: maven-search TERM [TERM..]"
+            return
         url = self.SOLR % {"terms" : (" ").join(terms) }
         result = json.load(urllib.urlopen(url))
         for doc in result['response']['docs']:

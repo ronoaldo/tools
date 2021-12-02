@@ -1,5 +1,21 @@
 #!/bin/bash
 
+usage() {
+    cat <<EOF
+csv2html: converts CSV files into HTML tables.
+
+Tested on simple files, without quoting. May produce
+funky results in those cases.
+
+Usage:
+    -h|--help   displays this help and exit.
+EOF
+}
+
+case $1 in
+    -h|--help) usage ; exit 1 ;
+esac;
+
 echo '<table border="1">'
 sed -e 's/</\&lt;/g' -e 's/>/\&gt;/g' -e 's;,;</td><td>;g' -e 's;^;<tr><td>;g' -e 's;$;</td></tr>;g'
 echo '</table>'

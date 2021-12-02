@@ -20,7 +20,20 @@ select_audio_source() {
 	pactl list sources short | grep -P "$DEFAULT_SINK" | awk '{print $2}'
 }
 
-if [ x"" = x"$1" ] ; then
+usage() {
+	cat <<EOF
+youtube-stream - simple CLI streaming utility for Youtube
+
+Streams a X Window to Youtube.
+
+Usage: youtube-stream STREAM_KEY
+
+Where STREAM_KEY is the Youtube streaming key you can get
+here: https://youtube.com/livestreaming
+EOF
+}
+
+if [ x"" = x"$1" ] || [ x"-h" = x"$1" ] || [ x"--help" = x"$1" ] ; then
 	echo "Usage: youtube-stream STREAM_KEY"
 	exit 1
 fi
