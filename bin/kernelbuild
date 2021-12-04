@@ -127,6 +127,11 @@ check_current_config() {
 
 run_make_menuconfig() {
 	info "Review linux-$KVER/config to confirm the build configuration."
+	[ -f /boot/config-$(uname -r ) ] && {
+		info "These are the changes from the running kernel: "
+		scripts/diffconfig /boot/config-$(uname -r) .config
+		echo
+	}
 	if ! confirm "Continue with the current running config? Answer 'no' to configure more options with 'make menuconfig'" ; then
 		make menuconfig
 	fi
