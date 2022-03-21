@@ -16,7 +16,7 @@ create_shim() {
 	cat > $shim <<EOF
 #!/usr/bin/env sh
 # Flapak shim created by $PROGRAM
-exec -a "$cmd" flatpak run $appid "$@"
+exec flatpak run $appid "\$@"
 EOF
 	chmod +x $shim
 }
