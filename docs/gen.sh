@@ -2,7 +2,7 @@
 
 usage() {
     cat <<EOF
-gen.sh - validates tooling documentaation and generates README.md
+gen.sh - validates tooling documentation and generates README.md
 
 Options:
     -h
