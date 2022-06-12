@@ -10,7 +10,7 @@ install_twitch_cli() {
 }
 
 install_youtube_cli() {
-    URL="https://github.com/ronoaldo/ogle/releases/download/v0.1.0-beta1/ogle_0.1.0-beta1_Linux_x86_64.tar.gz"
+    URL="https://github.com/ronoaldo/ogle/releases/download/v0.1.0-beta2/ogle_0.1.0-beta2_Linux_x86_64.tar.gz"
     TMP="$(mktemp)"
     curl -sL --fail "${URL}" > ${TMP}
     sudo tar -C /usr/local/bin/ -xf "${TMP}" "youtube"
@@ -28,8 +28,7 @@ login_to_youtube() {
 setup_streams() {
     # Fetch required IDs
     export BROADCASTER_ID="$(twitch api get /users -q "login=${CHANNEL}" | jq -r '.data[0].id')"
-    UPLOADS="$(youtube -cmd channels | grep "${CHANNEL}" | awk '{print $7}')"
-    STREAM_ID="$(youtube -cmd lives | grep ready  | awk '{print $3}')"
+    export STREAM_ID="$(youtube -cmd lives | grep ready  | awk '{print $3}')"
     
     # Fetch stream input
     echo "Configuring stream for: "
@@ -47,8 +46,8 @@ setup_streams() {
     echo "Updating twitch stream with game_id=${GAME_ID}(${GAME_NAME}), title=${TITLE}"
     twitch api patch /channels -q "broadcaster_id=${BROADCASTER_ID}" \
         -b "{\"game_id\": \"${GAME_ID}\", \"title\": \"${TITLE}\"}"
-    youtube -cmd video-update -video "${STREAM_ID}" \
-        -title "$TITLE" -desc "Playing ${GAME_NAME}" -tags "linux,gaming,${GAME_NAME}"
+    youtube -cmd live-update  -video "${STREAM_ID}" -title "$TITLE" -desc "Playing ${GAME_NAME}"
+    youtube -cmd video-update -video "${STREAM_ID}" -tags "linux,gaming,${GAME_NAME}"
 }
 
 main() {
