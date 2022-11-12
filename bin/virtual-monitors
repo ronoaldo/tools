@@ -1,7 +1,7 @@
 #!/bin/bash
 #
 # Usage:
-#	virtual-desktop 2 teams
+#	virtual-monitors SCREEN_COUNT PROGRAM
 #
 
 if [ $# -lt 2 ] ; then
@@ -19,19 +19,28 @@ for i in $(seq 1 $MONITORS) ; do
 	SCREENS="${SCREENS} -screen ${RESOLUTION}"
 done
 
-echo "Starting ${MONITORS} virtual desktops at ${RESOLUTION} (SCREENS=${SCREENS})"
-Xephyr $SCREENS -title "Virtual Desktop" +xinerama :1 &
+echo ">>> Starting ${MONITORS} virtual desktops at ${RESOLUTION} (SCREENS=${SCREENS})"
+Xephyr $SCREENS -title "Virtual Desktop" +xinerama :1 -no-host-grab &
 export DISPLAY=:1
 
-echo "Setting up monitor layout with xrandr ..."
-xrandr --setmonitor default~1 1920/508x1080/286+0+0 default
-xrandr --setmonitor default~2 1920/508x1080/286+1920+0 none
-xrandr --fb 3840x1080 
+_screen_size="${MONITORS}@${RESOLUTION}"
+case $_screen_size in
+	2@1920x1080)
+		echo "Setting up monitor layout with xrandr (${_screen_size}) ..."
+		xrandr --setmonitor default~1 1920/508x1080/286+0+0 default
+		xrandr --setmonitor default~2 1920/508x1080/286+1920+0 none
+		xrandr --fb 3840x1080 
+	;;
+esac
 
-echo "Starting window manager"
-sleep 1
+echo ">>> Starting window manager" ; sleep 1
 openbox --replace &
 
-echo "Running $CMD ..."
-sleep 1
-$CMD
+echo ">>> Starting screen annotation program ..." ; sleep 1
+env DISPLAY=":1" gromit-mpx &
+
+echo ">>> Running '$CMD' ..." ; sleep 1
+bash -c "$CMD" &
+
+echo ">>> Launching shell prompt with DISPLAY=${DISPLAY} ..."
+(source $HOME/.bashrc ; env PS1="(virtual-monitors) \$ " DISPLAY="${DISPLAY}" bash --norc)
