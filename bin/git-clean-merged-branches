@@ -1,5 +1,7 @@
 #!/bin/bash
 
+HEAD=${HEAD:-main}
+
 git fetch
-git branch --merged main | grep -v '^\* main' | xargs -n 1 -r git branch -d
+git branch --merged "${HEAD}" | grep -v "^\* ${HEAD}" | xargs -n 1 -r git branch -d
 git branch -vv | grep ': gone]' | grep -v '\*' | awk '{ print $1; }' | xargs -r git branch -d

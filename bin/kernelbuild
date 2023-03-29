@@ -90,8 +90,11 @@ fetch_kernel() {
 		5*)
 			export MAJOR=v5.x
 			;;
+		6*)
+			export MAJOR=v6.x
+			;;
 		*)
-			echo "Unsuported version: $KVER (Major versions supported are 3.x, 4.x and 5.x"
+			echo "Unsuported version: $KVER (Major versions supported are 5.x and 6.x"
 			exit 1
 	esac
 	info "Downloading kernel sources for $MAJOR line ($KVER) ... "
