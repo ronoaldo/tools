@@ -9,7 +9,7 @@ if [ $# -lt 2 ] ; then
 	exit 1
 fi
 
-RESOLUTION=${RESOLUTION:-1920X1080}
+RESOLUTION=${RESOLUTION:-1920x1080}
 MONITORS="$1"
 shift
 CMD="$@"
@@ -37,7 +37,13 @@ echo ">>> Starting window manager" ; sleep 1
 openbox --replace &
 
 echo ">>> Starting screen annotation program ..." ; sleep 1
-env DISPLAY=":1" gromit-mpx &
+gromit-mpx &
+
+echo ">>> Setting up wallpaper ..." ; sleep 1
+nitrogen --restore || true
+
+echo ">>> Running xclipsync ..." ; sleep 1
+xclipsync &
 
 echo ">>> Running '$CMD' ..." ; sleep 1
 bash -c "$CMD" &

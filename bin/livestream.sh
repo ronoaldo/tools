@@ -47,13 +47,25 @@ setup_streams() {
         youtube)
             export STREAM_ID="$(youtube -cmd lives | grep ready  | awk '{print $3}')"
             echo "youtube.com/c/${CHANNEL} (video_id=${STREAM_ID})"
-            youtube -cmd live-update  -video "${STREAM_ID}" -title "$TITLE" -desc "Playing ${GAME_NAME}"
             case $GAME_NAME in
                 *[Dd]evelopment*)
-                    youtube -cmd video-update -video "${STREAM_ID}" -tags "${GAME_NAME}"
+                    youtube -cmd live-update \
+                        -video "${STREAM_ID}" \
+                        -title "🔴 LIVE $TITLE" \
+                        -desc "${GAME_NAME}."
+                    youtube -cmd video-update \
+                        -video "${STREAM_ID}" \
+                        -tags "${GAME_NAME}"
+                        
                 ;;
                 *)
-                    youtube -cmd video-update -video "${STREAM_ID}" -tags "linux,gaming,${GAME_NAME}"
+                    youtube -cmd live-update \
+                        -video "${STREAM_ID}" \
+                        -title "🔴 LIVE $TITLE" \
+                        -desc "Playing ${GAME_NAME}."
+                    youtube -cmd video-update \
+                        -video "${STREAM_ID}" \
+                        -tags "linux,gaming,${GAME_NAME}"
                 ;;
             esac
         ;;
