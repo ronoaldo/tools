@@ -4,6 +4,9 @@
 #	virtual-monitors SCREEN_COUNT PROGRAM
 #
 
+BASEDIR="$(dirname $0)/../"
+BASEDIR="$(readlink -f "$BASEDIR")"
+
 if [ $# -lt 2 ] ; then
 	echo "Usage $(basename $0) SCREEN_COUNT COMMAND"
 	exit 1
@@ -43,7 +46,7 @@ echo ">>> Setting up wallpaper ..." ; sleep 1
 nitrogen --restore || true
 
 echo ">>> Running xclipsync ..." ; sleep 1
-xclipsync &
+"${BASEDIR}/third_party/xclipsync/xclipsync" &
 
 echo ">>> Running '$CMD' ..." ; sleep 1
 bash -c "$CMD" &
