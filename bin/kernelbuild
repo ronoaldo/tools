@@ -21,11 +21,15 @@
 # Be safe
 set -e
 
+# Debug
+[[ -n "${DEBUG}" ]] && set -x
+
 # Allows configuration of default 'run as sudo' command.
 export SUDO="${SUDO:-sudo}"
 export KVER="latest"
 export BUILD="1"
-export LOG="$PWD/linux-$(date +%Y%d%m-%H%M%S).log"
+LOG="${PWD}/linux-$(date +%Y%d%m-%H%M%S).log"
+export LOG
 
 export COLOR_GREEN='\033[0;32m'
 export COLOR_YELLOW='\033[1;33m'
@@ -52,8 +56,8 @@ error() {
 # 
 # returns 0 if yes, 1 if no
 confirm() {
-	read -p"$* (y|n) " answer
-	case "$answer" in
+	read -r -p"$* (y|n) " answer
+	case "${answer}" in
 		[yY][eE][sS]|[yY]) return 0 ;;
 		*) return 1;;
 	esac
@@ -63,7 +67,7 @@ confirm() {
 # 
 # returns 0 if properly installed, 1 otherwise
 is_pkg_installed() {
-	dpkg --status $1 2>&1 | grep -q "install ok installed" 2>/dev/null
+	dpkg --status "$1" 2>&1 | grep -q "install ok installed" 2>/dev/null || true
 	return $?
 }
 
@@ -72,21 +76,21 @@ is_pkg_installed() {
 install_build_dependencies() {
 	export to_install=""
 	for pkg in time gnupg2 build-essential fakeroot ; do
-		if ! is_pkg_installed "$pkg" ; then
-			export to_install="$to_install $pkg"
+		if ! is_pkg_installed "${pkg}" ; then
+			export to_install="${to_install} ${pkg}"
 		fi
 	done
-	if [ ! -z "$to_install" ] ; then
-		info "Installing extra build dependencies '$to_install' ..."
-		$SUDO apt-get install $to_install
+	if [[ -n "${to_install}" ]] ; then
+		info "Installing extra build dependencies '${to_install}' ..."
+		${SUDO} apt-get install "${to_install}"
 	fi
 	info "Checking if build-deps are up-to-date ..."
-	$SUDO apt-get build-dep linux
+	${SUDO} apt-get build-dep linux
 }
 
 fetch_kernel() {
 	export MAJOR=""
-	case $KVER in
+	case ${KVER} in
 		5*)
 			export MAJOR=v5.x
 			;;
@@ -94,48 +98,54 @@ fetch_kernel() {
 			export MAJOR=v6.x
 			;;
 		*)
-			echo "Unsuported version: $KVER (Major versions supported are 5.x and 6.x"
+			echo "Unsuported version: ${KVER} (Major versions supported are 5.x and 6.x"
 			exit 1
 	esac
-	info "Downloading kernel sources for $MAJOR line ($KVER) ... "
-	wget -c "http://www.kernel.org/pub/linux/kernel/$MAJOR/linux-$KVER.tar.xz"
-	wget -c "http://www.kernel.org/pub/linux/kernel/$MAJOR/linux-$KVER.tar.sign"
+	info "Downloading kernel sources for ${MAJOR} line (${KVER}) ... "
+	wget -c "http://www.kernel.org/pub/linux/kernel/${MAJOR}/linux-${KVER}.tar.xz"
+	wget -c "http://www.kernel.org/pub/linux/kernel/${MAJOR}/linux-${KVER}.tar.sign"
 	info "Verifying archive integrity... "
-	unxz -c linux-$KVER.tar.xz | gpg --verify linux-$KVER.tar.sign - || exit 2
+	unxz -c "linux-${KVER}.tar.xz" | gpg --verify "linux-${KVER}.tar.sign" - || exit 2
 	info "Archive downloaded and integrity is good to go!"
 }
 
 unpack_kernel() {
-	if [ -d linux-$KVER ] ; then
+	if [[ -d "linux-${KVER}" ]] ; then
 		info "Linux kernel already unpacked."
 		return 0
 	fi
 	info "Unpacking kernel sources ..."
-	tar xf linux-$KVER.tar.xz
+	tar xf "linux-${KVER}.tar.xz"
 }
 
 backup_current_config() {
-	if [ -f .config ] ; then
-		bak="../linux-$KVER.config-$(date +%Y%m%d-%H%M%S)"
-		info "Backing up current .config as $bak"
-		cp -v .config $bak
+	if [[ -f .config ]] ; then
+		bak="../linux-${KVER}.config-$(date +%Y%m%d-%H%M%S)"
+		info "Backing up current .config as ${bak}"
+		cp -v .config "${bak}"
 	fi
 }
 
 check_current_config() {
-	if [ -f .config ] ; then
+	if [[ -f .config ]] ; then
 		backup_current_config
 	fi
 }
 
 run_make_menuconfig() {
-	info "Review linux-$KVER/config to confirm the build configuration."
-	[ -f /boot/config-$(uname -r ) ] && {
+	if [[ ! -f .config ]] ; then
+		# User selected no auto-configuration option, so let's configure it mannually.
+		make menuconfig
+	fi
+
+	info "Review linux-${KVER}/config to confirm the build configuration."
+	running_kernel="$(uname -r)"
+	[[ -f "/boot/config-${running_kernel}" ]] && {
 		info "These are the changes from the running kernel: "
-		scripts/diffconfig /boot/config-$(uname -r) .config
+		scripts/diffconfig "/boot/config-${running_kernel}" .config
 		echo
 	}
-	if ! confirm "Continue with the current running config? Answer 'no' to configure more options with 'make menuconfig'" ; then
+	if ! confirm "Start the build? Answer 'yes' to buid and 'no' to configure again" ; then
 		make menuconfig
 	fi
 }
@@ -159,15 +169,15 @@ optimized_config() {
 	info "You should have all hardware you want to use pluged, so the current"
 	info "kernel will load the modules and they will be included in this build."
 
-	cp /boot/config-$( uname -r ) .config -v
+	cp "/boot/config-$( uname -r )" .config -v
 	make localmodconfig
 }
 
 local_version() {
 	VERSION="$(grep "CONFIG_LOCALVERSION=" .config | cut -f 2 -d '=' | sed -e 's;-;+;g' |\
 		sed -e 's;";;g' | sed -e 's;^+;;g')"
-	if [ ! -z "$VERSION" ] ; then
-		echo "$VERSION~"
+	if [[ -n "${VERSION}" ]] ; then
+		echo "${VERSION}~"
 	else
 		echo ""
 	fi
@@ -175,30 +185,39 @@ local_version() {
 
 # Starts the kernel build process
 build_packages() {
-	case $KVER in
+	case ${KVER} in
 		*-*)
-			REV="${KVER/-/\~}~$(local_version)custom$BUILD"
+			REV="${KVER/-/\~}~$(local_version)custom${BUILD}"
 			;;
 		*)
-			REV="$KVER~$(local_version)custom$BUILD"
+			REV="${KVER}~$(local_version)custom${BUILD}"
 			;;
 	esac
 	
 	info "Your kernel will be compiled now."
 	info "You may want to take one coffee. Or maybe two ..."
-	info "Your kernel revision will be $REV"
+	info "Your kernel revision will be ${REV}"
 
 	# This is needed to avoid trying to use debian/keys
 	sed -ri '/CONFIG_SYSTEM_TRUSTED_KEYS/s/=.+/=""/g' .config
+	
+	# Sign the kernel and modules for secure-boot
+	if [[ -f /var/lib/shim-signed/mok/MOK.sign.pem ]]; then
+		echo -n "Passphrase for the private key: "
+		read -r -s KBUILD_SIGN_PIN
+		export KBUILD_SIGN_PIN
+		sed -ri '/CONFIG_MODULE_SIG_KEY=/s,=.+,=/var/lib/shim-signed/mok/MOK.sign.pem,g' .config
+	fi
+	grep -E 'TRUSTED_KEYS|MODULE_SIG_KEY' .config
 
 	# Run and account used time with the GNU time command	
-	LOG="../linux-image-$REV.log"
-	\time -o $LOG.time -f "Build time for the package: %E" \
+	LOG="../linux-image-${REV}.log"
+	command time -o "${LOG}.time" -f "Build time for the package: %E" \
 		make bindeb-pkg \
-		$BUILD_ARGS \
+		"${BUILD_ARGS}" \
 		EXTRAVERSION="-amd64" \
-		KDEB_PKGVERSION=$(make kernelversion)-$REV \
-		DEBEMAIL='ronoaldo@gmail.com' 2>&1 | tee $LOG
+		KDEB_PKGVERSION="$(make kernelversion)-${REV}" \
+		DEBEMAIL='ronoaldo@gmail.com' 2>&1 | tee "${LOG}" || true
 }
 
 usage() {
@@ -207,9 +226,9 @@ Usage $0 [OPTIONS]
 
 Where OPTIONS can be:
 	--kernel-version|-k
-		Configures the kernel version (default=$KVER)
+		Configures the kernel version (default=${KVER})
 	--fast
-		Enable multiple jobs in parallel. $(grep -c '^processor' /proc/cpuinfo) jobs
+		Enable multiple jobs in parallel. $(grep -c '^processor' /proc/cpuinfo || true) jobs
 	--build-number|-b
 		Enables a specific build number after 
 		"~custom" on kernel package revision
@@ -227,83 +246,94 @@ EOF
 ### Main ###
 
 # Quick help
-case $@ in --help|-h|-?) usage ; exit 1 ;; esac
+case $@ in
+	--help|-h|-?)
+		usage
+		exit 1
+	;;
+	*)
+	# Parses the CLI options and configurations.
+	while [[ $# -gt 0 ]] ; do
+		case $1 in
+			--kernel-version|-k)
+				shift
+				export KVER="$1"
+				info "Setting kernel version to ${KVER}"
+			;;
 
-# Parses the CLI options and configurations.
-while [ $# -gt 0 ] ; do
-	case $1 in
-		--kernel-version|-k)
-			shift
-			export KVER="$1"
-			info "Setting kernel version to $KVER"
-		;;
+			--fast)
+				warn "Building with maximal usage of CPU!"
+				BUILD_ARGS="${BUILD_ARGS} -j$(grep -c '^processor' /proc/cpuinfo || true)"
+				export BUILD_ARGS
+			;;
 
-		--fast)
-			warn "Building with maximal usage of CPU!"
-			export BUILD_ARGS="$BUILD_ARGS -j$(grep -c '^processor' /proc/cpuinfo)"
-		;;
+			--safe-config)
+				info "Will perform safe-config"
+				export SAFE_CONFIG=true
+			;;
+			--optimized-config|--optimal-config)
+				info "Will perform optimized-config"
+				export OPTIMIZED_CONFIG=true
+			;;
+			--build-number|-b)
+				shift
+				info "Build number is $1"
+				export BUILD="$1"
+			;;
+			--cpus)
+				shift
+				info "Building with $1 cpus"
+				export BUILD_ARGS="${BUILD_ARGS} -j${1}"
+			;;
+			*)
+				echo "Unknown argument '$1'"
+				usage
+				exit 1
+			;;
+		esac
+		shift
+	done
 
-		--safe-config)
-			info "Will perform safe-config"
-			export SAFE_CONFIG=true
-		;;
-		--optimized-config|--optimal-config)
-			info "Will perform optimized-config"
-			export OPTIMIZED_CONFIG=true
-		;;
-		--build-number|-b)
-			shift
-			info "Build number is $1"
-			export BUILD="$1"
-		;;
-		--cpus)
-			shift
-			info "Building with $1 cpus"
-			export BUILD_ARGS="$BUILD_ARGS -j$1"
+	case "${KVER}" in
+		latest)
+			info "Guessing latest stable kernel version ..."
+			KVER="$(wget -o/dev/null -O - 'http://www.kernel.org/' | \
+				sed -n '/stable:/{n;p;}' | head -n 1  | \
+				sed -rn 's/.*>([0-9.]+)<.*/\1/p' || true)"
+			export KVER
 		;;
 		*)
-			echo "Unknown argument '$1'"
-			usage
+			warn "Unsupported kernel version: ${KVER}"
 			exit 1
 		;;
 	esac
-	shift
-done
 
-case $KVER in
-	latest)
-		info "Guessing latest stable kernel version ..."
-		KVER="$(wget -o/dev/null -O - 'http://www.kernel.org/' | \
-			sed -n '/stable:/{n;p;}' | head -n 1  | \
-			sed -rn 's/.*>([0-9.]+)<.*/\1/p' )"
-		export KVER
+	# Configure and build
+	info "Building linux kernel version ${KVER} ..."
+
+	info "Checking source and build dependencies"
+	install_build_dependencies
+	fetch_kernel
+	unpack_kernel
+	cd "linux-${KVER}"
+
+	info "Cleaning up kernel build tree (make distclean)"
+	backup_current_config
+	make distclean
+
+	info "Configuring the kernel"
+	if [[ -n ${SAFE_CONFIG} ]] ; then
+		info "Automated config selected: safe config"
+		safe_config
+	elif [[ -n ${OPTIMIZED_CONFIG} ]] ; then
+		info "Automated config selected: optimized config"
+		optimized_config
+	else
+		info "No automated config selected. Configure the kernel manually"
+	fi
+	run_make_menuconfig
+
+	info "Building now ... this will take a long time"
+	build_packages
 	;;
 esac
-
-# Configure and build
-info "Building linux kernel version $KVER ..."
-
-info "Checking source and build dependencies"
-install_build_dependencies
-fetch_kernel
-unpack_kernel
-cd linux-$KVER
-
-info "Cleaning up kernel build tree (make distclean)"
-backup_current_config
-make distclean
-
-info "Configuring the kernel"
-if [ ! -z $SAFE_CONFIG ] ; then
-	info "Automated config selected: safe config"
-	safe_config
-elif [ ! -z $OPTIMIZED_CONFIG ] ; then
-	info "Automated config selected: optimized config"
-	optimized_config
-else
-	info "No automated config selected. Configure the kernel manually"
-fi
-run_make_menuconfig
-
-info "Building now ... this will take a long time"
-build_packages
