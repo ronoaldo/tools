@@ -1,0 +1,61 @@
+#!/bin/bash
+
+_ORIG_PS1="${PS1}"
+
+# Returns a gcloud property by section and name.
+# Could parse it from "gcloud config list" output, but invoking gcloud on
+# each prompt is impractically slow currently.  Use custom Python for now.
+function __get_gcloud_config_property () {
+  # CD to the root directory so we don't pick up unexpected python modules.
+  CUR_DIR=`pwd`
+  CLOUDSDK_CONFIG="$HOME/.config/gcloud"
+  cd /
+
+  SECTION=\'$1\'
+  PROPERTY=\'$2\'
+  ACTIVE_CONFIG=`cat $CLOUDSDK_CONFIG/active_config 2>/dev/null`
+  python3 <<EOF
+import configparser as cp
+try:
+  config_path = '$CLOUDSDK_CONFIG' + '/configurations/config_' + '$ACTIVE_CONFIG'
+  config = cp.ConfigParser()
+  config.read(config_path)
+  print(config.get($SECTION, $PROPERTY))
+except Exception as e:
+  print("")
+EOF
+
+  cd "$CUR_DIR"
+}
+
+_RESET="\033[0m"
+_RED="\033[0;31m"
+_GREEN="\033[01;32m"
+_BLUE="\033[01;34m"
+_YELLOW="\033[0;33m"
+_GRAY="\033[1;30m"
+_BRED="\033[1;31m"
+
+# Default user color is green, root is red
+_USR_COLOR="${_GREEN}" ; [ `id -u` == 0 ] && _USR_COLOR="${_BRED}"
+
+function __gcloud_ps1() {
+        proj="$(__get_gcloud_config_property core project)"
+        [ -z "${proj}" ] && proj="unset"
+        acc="$(__get_gcloud_config_property core account)"
+        [ -z "${acc}" ] && acc="nobody"
+        echo -n -e "${acc}${_YELLOW}(${proj})"
+}
+
+function ps1_fancy() {
+	export GIT_PS1_SHOWDIRTYSTATE="true" GIT_PS1_SHOWUPSTREAM="auto" GIT_PS1_SHOWCOLORHINTS="true"
+	export PS1_EXTRA="${_GRAY} \$(__gcloud_ps1) ${_GRAY}\$(__git_ps1 '${_RED}%s${_RESET}${_GRAY}') \t${_RESET}"
+	export PS1="${_USR_COLOR}\u${_GREEN}@\h:${_BLUE}\w${_RESET} ${PS1_EXTRA}"
+	export PS1="${PS1}\n└ \\$ "
+}
+
+function ps1_simple() {
+	export PS1="${_ORIG_PS1}"
+}
+
+ps1_fancy
