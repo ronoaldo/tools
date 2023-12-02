@@ -16,6 +16,10 @@ RESOLUTION=${RESOLUTION:-1920x1080}
 MONITORS="$1"
 shift
 CMD="$@"
+# From https://www.reddit.com/r/linux_gaming/comments/h8x4js/comment/k2bt218/?utm_source=share&utm_medium=web3x&utm_name=web3xcss&utm_term=1&utm_content=share_button
+RUN="vglrun -d ${DISPLAY}"
+echo "Launching with ${RUN}"
+export RUN
 
 SCREENS=""
 for i in $(seq 1 $MONITORS) ; do
@@ -23,8 +27,8 @@ for i in $(seq 1 $MONITORS) ; do
 done
 
 echo ">>> Starting ${MONITORS} virtual desktops at ${RESOLUTION} (SCREENS=${SCREENS})"
-Xephyr $SCREENS -title "Virtual Desktop" +xinerama :1 -no-host-grab &
-export DISPLAY=:1
+Xephyr $SCREENS -title "Virtual Desktop" +xinerama :10 -no-host-grab &
+export DISPLAY=:10
 
 _screen_size="${MONITORS}@${RESOLUTION}"
 case $_screen_size in
@@ -37,19 +41,16 @@ case $_screen_size in
 esac
 
 echo ">>> Starting window manager" ; sleep 1
-openbox --replace &
-
-echo ">>> Starting screen annotation program ..." ; sleep 1
-gromit-mpx &
+${RUN} openbox --replace &
 
 echo ">>> Setting up wallpaper ..." ; sleep 1
-nitrogen --restore || true
+${RUN} nitrogen --restore || true
 
 echo ">>> Running xclipsync ..." ; sleep 1
 "${BASEDIR}/third_party/xclipsync/xclipsync" &
 
 echo ">>> Running '$CMD' ..." ; sleep 1
-bash -c "$CMD" &
+bash -c "${RUN} $CMD" &
 
 echo ">>> Launching shell prompt with DISPLAY=${DISPLAY} ..."
 (source $HOME/.bashrc ; env PS1="(virtual-monitors) \$ " DISPLAY="${DISPLAY}" bash --norc)

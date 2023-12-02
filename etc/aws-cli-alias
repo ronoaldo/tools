@@ -1,24 +1,37 @@
 [toplevel]
+# helper to print nicelly formatted output
+tab =
+    !f() {
+        cmd="$1"
+        list="${2:-*}"
+        header="$(echo "$3" | tr [[:lower:]] [[:upper:]] | tr ',' '\t' )"
+        cols="$(echo ".[${3}]" | sed -e "s/Tag:Name/Tags[?Key=='Name'].Value|[0]/g")"
+        shift; shift ; shift
+        args=""; for arg in $@; do args="${args} -${arg}"; done
+        (
+            printf "${header}\n"
+            aws --output text ${cmd} ${args} --query="${list}${cols}"
+        ) | column -t
+    }; f
+# list all enabled regions
 list-regions = ec2 describe-regions --query "Regions[*].[RegionName]" --region-names --output text
 
 [command ec2]
-list-instances =
-    !f() {
-        (
-            cols='InstanceId, Tags[?Key=='Name'].Value|[0], Placement.AvailabilityZone, InstanceType, PrivateIpAddress, PublicIpAddress, State.Name'
-            printf "INSTANCE_ID\tNAME\tZONE\tTYPE\tPRIVATE_IP\tPUBLIC_IP\tSTATE\n"
-            aws ec2 describe-instances --query "Reservations[].Instances[].[${cols}]" --output text
-        ) | column -t
-    }; f
-
+# gcloud-like lists
+list-instances = !aws tab "ec2 describe-instances" "Reservations[].Instances[]" \
+    "InstanceId,Tag:Name,Placement.AvailabilityZone,InstanceType,PrivateIpAddress,PublicIpAddress,State.Name"
+list-subnets =   !aws tab "ec2 describe-subnets" "Subnets[]" \
+    "SubnetId,Tag:Name,VpcId,CidrBlock,MapPublicIpOnLaunch"
+list-vpcs =      !aws tab "ec2 describe-vpcs" "Vpcs[]" "VpcId,CidrBlock,IsDefault"
+# global lists
 list-all-vpcs =
     !f() {
         (
             printf "REGION\tVPC_ID\tCIDR_BLOCK\tIS_DEFAULT\n"
-            aws list-regions | xargs -IREG aws ec2 describe-vpcs --query "Vpcs[*].['REG',VpcId,CidrBlock,IsDefault]" --region REG --output text
+            aws list-regions | xargs -IREG aws ec2 describe-vpcs \
+                --query "Vpcs[*].['REG',VpcId,CidrBlock,IsDefault]" --region REG --output text
         ) | column -t
     }; f
-
 list-all-instances =
     !f() {
         (
