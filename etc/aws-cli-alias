@@ -1,0 +1,28 @@
+[toplevel]
+list-regions = ec2 describe-regions --query "Regions[*].[RegionName]" --region-names --output text
+
+[command ec2]
+list-instances =
+    !f() {
+        (
+            cols='InstanceId, Tags[?Key=='Name'].Value|[0], Placement.AvailabilityZone, InstanceType, PrivateIpAddress, PublicIpAddress, State.Name'
+            printf "INSTANCE_ID\tNAME\tZONE\tTYPE\tPRIVATE_IP\tPUBLIC_IP\tSTATE\n"
+            aws ec2 describe-instances --query "Reservations[].Instances[].[${cols}]" --output text
+        ) | column -t
+    }; f
+
+list-all-vpcs =
+    !f() {
+        (
+            printf "REGION\tVPC_ID\tCIDR_BLOCK\tIS_DEFAULT\n"
+            aws list-regions | xargs -IREG aws ec2 describe-vpcs --query "Vpcs[*].['REG',VpcId,CidrBlock,IsDefault]" --region REG --output text
+        ) | column -t
+    }; f
+
+list-all-instances =
+    !f() {
+        (
+            printf "INSTANCE_ID\tNAME\tZONE\tTYPE\tPRIVATE_IP\tPUBLIC_IP\tSTATE\n"
+            aws list-regions | xargs -IREG aws ec2 list-instances --region REG | grep -v ^INSTANCE_ID
+        ) | column -t
+    }; f
