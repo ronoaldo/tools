@@ -1,0 +1,11 @@
+#!/usr/bin/bash
+set -x
+set -e
+
+bwrap \
+	--dev-bind / / \
+	--tmpfs $HOME \
+	--ro-bind $HOME/.Xauthority $HOME/.Xauthority \
+	--tmpfs /tmp \
+	--bind /tmp/.X11-unix /tmp/.X11-unix \
+	dbus-run-session sway
