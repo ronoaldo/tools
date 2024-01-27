@@ -21,7 +21,7 @@ call plug#begin()
 Plug 'fatih/vim-go', { 'do': ':GoUpdateBinaries' }
 
 " NERDTree for file browsing
-Plug 'preservim/nerdtree', { 'on': 'NERDTreeToggle' }
+Plug 'preservim/nerdtree'
 
 " Colorscheme
 Plug 'fatih/molokai'
@@ -59,7 +59,6 @@ set mouse=a		" Enable mouse usage (all modes)
 "
 " My personal settings
 "
-
 set number
 colorscheme default
 
@@ -75,6 +74,9 @@ autocmd FileType go nmap <leader>t <Plug>(go-test)
 autocmd FileType go nmap <leader>d <Plug>(go-doc)
 " Show tabs as 4 spaces
 autocmd BufNewFile,BufRead *.go setlocal noexpandtab tabstop=4 shiftwidth=4 
+
+" Easy access to NERDTree
+nmap <F2> :NERDTreeToggle<CR>
 
 " Colorscheme
 let g:rehash256 = 1
