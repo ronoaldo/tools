@@ -7,9 +7,9 @@
 " to pin to specific version.
 let plug_version = '0.11.0'
 let plug_url = 'https://raw.githubusercontent.com/junegunn/vim-plug/' . plug_version . '/plug.vim'
-let plug_data_dir = has('nvim') ? stdpath('data') . '/site' : '~/.vim'
-if empty( glob(plug_data_dir . '/autoload/plug.vim') )
-	silent execute '!curl -fLo '.plug_data_dir.'/autoload/plug.vim --create-dirs '.plug_url
+let vim_data_dir = has('nvim') ? stdpath('data') . '/site' : '~/.vim'
+if empty( glob(vim_data_dir . '/autoload/plug.vim') )
+	silent execute '!curl -fLo '.vim_data_dir.'/autoload/plug.vim --create-dirs '.plug_url
 	autocmd VimEnter * PlugInstall --sync | source $MYVIMRC
 endif
 
@@ -87,6 +87,26 @@ autocmd VimEnter * if argc() == 1 && isdirectory(argv()[0]) && !exists('s:std_in
 autocmd BufEnter * if tabpagenr('$') == 1 && winnr('$') == 1 && exists('b:NERDTree') && b:NERDTree.isTabTree() | quit | endif
 " Show file line count
 let g:NERDTreeFileLines = 1
+" Allow to copy (yank) filename from NERDTree window with 'yy'
+let nerd_tree_dir = ''. vim_data_dir . '/nerdtree_plugin'
+if empty( glob(nerd_tree_dir . '/yank_filename.vim') )
+	silent execute '! mkdir -p ' . nerd_tree_dir
+	let lines =<< trim END
+call NERDTreeAddKeyMap({
+        \ 'key': 'yy',
+        \ 'callback': 'NERDTreeYankCurrentNode',
+        \ 'quickhelpText': 'put full path of current node into the default register' })
+
+function! NERDTreeYankCurrentNode()
+    let n = g:NERDTreeFileNode.GetSelected()
+    if n != {}
+        call setreg('"', n.path.getLastPathComponent(0))
+    endif
+endfunction
+END
+	call writefile(lines, expand(nerd_tree_dir . '/yank_filename.vim'), 'b')
+	echo 'NERDTree yy configured'
+endif
 
 " Colorscheme
 let g:rehash256 = 1
