@@ -4,13 +4,13 @@
 
 " Auto-installs vim-plug for plugin manager if not installed.
 " Adapted from https://github.com/junegunn/vim-plug/wiki/tips#automatic-installation
-" to pin to specific version.
+" Changed the tip to pin a specific version when installing.
 let plug_version = '0.11.0'
 let plug_url = 'https://raw.githubusercontent.com/junegunn/vim-plug/' . plug_version . '/plug.vim'
 let vim_data_dir = has('nvim') ? stdpath('data') . '/site' : '~/.vim'
 if empty( glob(vim_data_dir . '/autoload/plug.vim') )
-	silent execute '!curl -fLo '.vim_data_dir.'/autoload/plug.vim --create-dirs '.plug_url
-	autocmd VimEnter * PlugInstall --sync | source $MYVIMRC
+    silent execute '!curl -fLo '.vim_data_dir.'/autoload/plug.vim --create-dirs '.plug_url
+    autocmd VimEnter * PlugInstall --sync | source $MYVIMRC
 endif
 
 " Install plugins
@@ -20,63 +20,85 @@ call plug#begin()
 " vim-go for Go development
 Plug 'fatih/vim-go', { 'do': ':GoUpdateBinaries' }
 
-" NERDTree for file browsing
-Plug 'preservim/nerdtree'
-
 " Colorscheme
 Plug 'fatih/molokai'
 
-call plug#end()
+" NERDTree for file browsing
+Plug 'preservim/nerdtree'
 
-filetype plugin indent off
+" Fugitive
+Plug 'tpope/vim-fugitive'
+
+call plug#end()
+filetype plugin indent on
 
 "
 " Vim customizations, based on Debian defaults
 "
 
 " From $VIMRUNTIME/debian.vim
-set nocompatible              " No need for 100% vi compatibility, we're in 2024
+set nocompatible               " No need for 100% vi compatibility, we're in 2024
 set backspace=indent,eol,start " more powerful backspacing
-set history=50                " keep 50 lines of command line history
-set ruler                     " show the cursor position all the time
-set nomodeline                " debian defaults disable this for security reasons
+set history=50                 " keep 50 lines of command line history
+set ruler                      " show the cursor position all the time
+set nomodeline                 " debian defaults disable this for security reasons
 " Suffixes that get lower priority when doing tab completion for filenames.
 " These are files we are not likely to want to edit or read.
 set suffixes=.bak,~,.swp,.o,.info,.aux,.log,.dvi,.bbl,.blg,.brf,.cb,.ind,.idx,.ilg,.inx,.out,.toc
-" Enable some useful features
-syntax on
-set background=dark
-filetype plugin indent on
 
-" From /etc/vim/vimrc
-set showcmd		" Show (partial) command in status line.
-set showmatch		" Show matching brackets.
-set ignorecase		" Do case insensitive matching
-set smartcase		" Do smart case matching
-set incsearch		" Incremental search
-set autowrite		" Automatically save before commands like :next and :make
-set hidden		" Hide buffers when they are abandoned
-set mouse=a		" Enable mouse usage (all modes)
+" From Debian's /etc/vim/vimrc
+set showcmd       " Show (partial) command in status line.
+set showmatch     " Show matching brackets.
+set ignorecase    " Do case insensitive matching
+set smartcase     " Do smart case matching
+set incsearch     " Incremental search
+set autowrite     " Automatically save before commands like :next and :make
+set hidden        " Hide buffers when they are abandoned
+set mouse=a       " Enable mouse usage (all modes)
 
 "
 " My personal settings
 "
-set number
-colorscheme default
 
-" Go goodies from Vim go docs
+set number              " show absolute line numbers
+set hlsearch            " always hilight search
+let mapleader = ','     " use , as leader key
+" Keep cursos always centered
+autocmd CursorMoved,CursorMovedI * call Center_cursor()
+function! Center_cursor()
+    let pos = getpos(".")
+    normal! zz
+    call setpos(".", pos)
+endfunction
+" Use molokai colorscheme
+syntax on
+let g:rehash256 = 1
+let g:molokai_original = 1
+set background=dark
+colorscheme molokai
+
+"
+" Go programming goodies from Vim go docs and misc sources.
+"
 let g:go_list_type = "quickfix"  " Always use the quickfix window
-" \b to go build
-autocmd FileType go nmap <leader>b <Plug>(go-build)
-" \r to go run
-autocmd FileType go nmap <leader>r <Plug>(go-run)
-" \t to go test
-autocmd FileType go nmap <leader>t <Plug>(go-test)
-" \d to go doc
-autocmd FileType go nmap <leader>d <Plug>(go-doc)
-" Show tabs as 4 spaces
+" ,b to go build
+autocmd FileType go nnoremap <leader>b <Plug>(go-build)
+" ,r to go run
+autocmd FileType go nnoremap <leader>r <Plug>(go-run)
+" ,t to go test
+autocmd FileType go nnoremap <leader>t <Plug>(go-test)
+" ,d to go doc
+autocmd FileType go nnoremap <leader>d <Plug>(go-doc)
+" Show tabs as 4 spaces for Go programs
 autocmd BufNewFile,BufRead *.go setlocal noexpandtab tabstop=4 shiftwidth=4 
+" Autocomplete when we type <C-Space> in a file.
+" This is interesting: C-@ is the signal Vim receives when you type C-Space
+" in a terminal!
+inoremap <buffer> <C-@> <C-x><C-o>
 
+"
+" NERDTree settings to make it more handy
+"
 " Easy access to NERDTree
 nmap <F2> :NERDTreeToggle<CR>
 " Start NERDTree when Vim starts with a directory argument.
@@ -84,18 +106,22 @@ autocmd StdinReadPre * let s:std_in=1
 autocmd VimEnter * if argc() == 1 && isdirectory(argv()[0]) && !exists('s:std_in') |
     \ execute 'NERDTree' argv()[0] | wincmd p | enew | execute 'cd '.argv()[0] | endif
 " Exit Vim if NERDTree is the only window remaining in the only tab.
-autocmd BufEnter * if tabpagenr('$') == 1 && winnr('$') == 1 && exists('b:NERDTree') && b:NERDTree.isTabTree() | quit | endif
+autocmd BufEnter * if tabpagenr('$') == 1 &&
+    \ winnr('$') == 1 &&
+    \ exists('b:NERDTree') &&
+    \ b:NERDTree.isTabTree() | quit | endif
 " Show file line count
 let g:NERDTreeFileLines = 1
 " Allow to copy (yank) filename from NERDTree window with 'yy'
+" This is a hacky solution to auto-install the shortcut if not there yet.
 let nerd_tree_dir = ''. vim_data_dir . '/nerdtree_plugin'
 if empty( glob(nerd_tree_dir . '/yank_filename.vim') )
-	silent execute '! mkdir -p ' . nerd_tree_dir
-	let lines =<< trim END
+    silent execute '! mkdir -p ' . nerd_tree_dir
+    let lines =<< trim END
 call NERDTreeAddKeyMap({
-        \ 'key': 'yy',
-        \ 'callback': 'NERDTreeYankCurrentNode',
-        \ 'quickhelpText': 'put full path of current node into the default register' })
+    \ 'key': 'yy',
+    \ 'callback': 'NERDTreeYankCurrentNode',
+    \ 'quickhelpText': 'put full path of current node into the default register' })
 
 function! NERDTreeYankCurrentNode()
     let n = g:NERDTreeFileNode.GetSelected()
@@ -104,11 +130,7 @@ function! NERDTreeYankCurrentNode()
     endif
 endfunction
 END
-	call writefile(lines, expand(nerd_tree_dir . '/yank_filename.vim'), 'b')
-	echo 'NERDTree yy configured'
+    call writefile(lines, expand(nerd_tree_dir . '/yank_filename.vim'), 'b')
+    echo 'NERDTree yy configured'
 endif
 
-" Colorscheme
-let g:rehash256 = 1
-let g:molokai_original = 1
-colorscheme molokai
