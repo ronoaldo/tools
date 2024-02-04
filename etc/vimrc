@@ -95,6 +95,8 @@ autocmd BufNewFile,BufRead *.go setlocal noexpandtab tabstop=4 shiftwidth=4
 " This is interesting: C-@ is the signal Vim receives when you type C-Space
 " in a terminal!
 inoremap <C-@> <C-x><C-o>
+" Close the doc preview window after auto-completion selection is made
+autocmd CompleteDone * pclose
 
 "
 " NERDTree settings to make it more handy
