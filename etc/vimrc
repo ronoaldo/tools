@@ -94,7 +94,7 @@ autocmd BufNewFile,BufRead *.go setlocal noexpandtab tabstop=4 shiftwidth=4
 " Autocomplete when we type <C-Space> in a file.
 " This is interesting: C-@ is the signal Vim receives when you type C-Space
 " in a terminal!
-inoremap <buffer> <C-@> <C-x><C-o>
+inoremap <C-@> <C-x><C-o>
 
 "
 " NERDTree settings to make it more handy
