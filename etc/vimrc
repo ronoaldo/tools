@@ -99,6 +99,14 @@ inoremap <C-@> <C-x><C-o>
 autocmd CompleteDone * pclose
 
 "
+" Webdev
+"
+" Show tabs as 4 spaces for HTML, CSS files
+autocmd BufNewFile,BufRead *.html setlocal noexpandtab tabstop=4 shiftwidth=4
+autocmd BufNewFile,BufRead *.css  setlocal noexpandtab tabstop=4 shiftwidth=4
+autocmd BufNewFile,BufRead *.js   setlocal noexpandtab tabstop=4 shiftwidth=4
+
+"
 " NERDTree settings to make it more handy
 "
 " Easy access to NERDTree
