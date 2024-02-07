@@ -63,6 +63,7 @@ set mouse=a       " Enable mouse usage (all modes)
 set number              " show absolute line numbers
 set hlsearch            " always hilight search
 let mapleader = ','     " use , as leader key
+
 " Keep cursos always centered
 autocmd CursorMoved,CursorMovedI * call Center_cursor()
 function! Center_cursor()
@@ -70,12 +71,38 @@ function! Center_cursor()
     normal! zz
     call setpos(".", pos)
 endfunction
+
+" Do vim motion or do not, there is no mouse
+set mouse=""
+
 " Use molokai colorscheme
 syntax on
 let g:rehash256 = 1
 let g:molokai_original = 1
 set background=dark
 colorscheme molokai
+
+" Autocomplete when we type <C-Space> in a file.
+" This is interesting: C-@ is the signal Vim receives when you type C-Space
+" in a terminal!
+inoremap <C-@> <C-x><C-o>
+" Close the doc preview window after auto-completion selection is made
+autocmd CompleteDone * pclose
+
+" Tabs versus Spaces war
+function! SpacesWin(len)
+    execute 'setlocal shiftwidth=' . a:len . ' tabstop=' . a:len
+    setlocal smarttab expandtab smartindent autoindent
+endfunction
+function! TabsWin()
+    call SpacesWin(4)
+    setlocal noexpandtab
+endfunction
+
+"
+" vimrc
+"
+autocmd FileType vim call SpacesWin(4)
 
 "
 " Go programming goodies from Vim go docs and misc sources.
@@ -90,31 +117,35 @@ autocmd FileType go nnoremap <leader>t <Plug>(go-test)
 " ,d to go doc
 autocmd FileType go nnoremap <leader>d <Plug>(go-doc)
 " Show tabs as 4 spaces for Go programs
-autocmd BufNewFile,BufRead *.go setlocal noexpandtab tabstop=4 shiftwidth=4 
-" Autocomplete when we type <C-Space> in a file.
-" This is interesting: C-@ is the signal Vim receives when you type C-Space
-" in a terminal!
-inoremap <C-@> <C-x><C-o>
-" Close the doc preview window after auto-completion selection is made
-autocmd CompleteDone * pclose
+autocmd BufNewFile,BufRead *.go call TabsWin()
 
 "
 " Webdev
 "
 " Show tabs as 4 spaces for HTML, CSS files
-autocmd BufNewFile,BufRead *.html setlocal noexpandtab tabstop=4 shiftwidth=4
-autocmd BufNewFile,BufRead *.css  setlocal noexpandtab tabstop=4 shiftwidth=4
-autocmd BufNewFile,BufRead *.js   setlocal noexpandtab tabstop=4 shiftwidth=4
+autocmd BufNewFile,BufRead *.html call TabsWin()
+autocmd BufNewFile,BufRead *.css  call TabsWin()
+autocmd BufNewFile,BufRead *.js   call TabsWin()
+autocmd BufNewFile,BufRead *.xml  call TabsWin()
 
 "
 " NERDTree settings to make it more handy
 "
 " Easy access to NERDTree
-nmap <F2> :NERDTreeToggle<CR>
+map <F2> :NERDTreeToggle<CR>
+nmap <leader>f :NERDTreeToggle<CR>
+
 " Start NERDTree when Vim starts with a directory argument.
 autocmd StdinReadPre * let s:std_in=1
-autocmd VimEnter * if argc() == 1 && isdirectory(argv()[0]) && !exists('s:std_in') |
-    \ execute 'NERDTree' argv()[0] | wincmd p | enew | execute 'cd '.argv()[0] | endif
+autocmd VimEnter *
+    \ if argc() == 1 && isdirectory(argv()[0]) && !exists('s:std_in') |
+    \ execute 'NERDTree' argv()[0] |
+    \ wincmd p |
+    \ enew |
+    \ wincmd p |
+    \ execute 'cd '.argv()[0] |
+    \ endif
+
 " Exit Vim if NERDTree is the only window remaining in the only tab.
 autocmd BufEnter * if tabpagenr('$') == 1 &&
     \ winnr('$') == 1 &&
@@ -122,12 +153,11 @@ autocmd BufEnter * if tabpagenr('$') == 1 &&
     \ b:NERDTree.isTabTree() | quit | endif
 " Show file line count
 let g:NERDTreeFileLines = 1
+
 " Allow to copy (yank) filename from NERDTree window with 'yy'
 " This is a hacky solution to auto-install the shortcut if not there yet.
 let nerd_tree_dir = ''. vim_data_dir . '/nerdtree_plugin'
-if empty( glob(nerd_tree_dir . '/yank_filename.vim') )
-    silent execute '! mkdir -p ' . nerd_tree_dir
-    let lines =<< trim END
+let lines =<< trim END
 call NERDTreeAddKeyMap({
     \ 'key': 'yy',
     \ 'callback': 'NERDTreeYankCurrentNode',
@@ -140,6 +170,8 @@ function! NERDTreeYankCurrentNode()
     endif
 endfunction
 END
+if empty( glob(nerd_tree_dir . '/yank_filename.vim') )
+    silent execute '! mkdir -p ' . nerd_tree_dir
     call writefile(lines, expand(nerd_tree_dir . '/yank_filename.vim'), 'b')
     echo 'NERDTree yy configured'
 endif
