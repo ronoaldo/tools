@@ -129,6 +129,12 @@ autocmd BufNewFile,BufRead *.js   call TabsWin()
 autocmd BufNewFile,BufRead *.xml  call TabsWin()
 
 "
+" Shell
+"
+autocmd BufNewFile,BufRead *.sh call TabsWin() 
+autocmd FileType sh call TabsWin()
+
+"
 " NERDTree settings to make it more handy
 "
 " Easy access to NERDTree

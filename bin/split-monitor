@@ -1,4 +1,7 @@
 #!/bin/bash
+set -e
+# echo "DEBUG=$DEBUG"
+if [ "$DEBUG" = "true" ] ; then set -x ; fi
 
 #
 # Split screen helper for ultrawide monitors
@@ -29,6 +32,7 @@ Where LAYOUT can be one of:
 	1x1: resets to a single split
 	2x1: split the screen in half
 	3x1: split the screen in three parts
+	stream: split the screen in a 1x2x1 split to have a 1920x1080 in the center
 EOF
 }
 
@@ -72,6 +76,20 @@ case $1 in
 		xrandr --setmonitor $NAME~1 ${w}/${wmm}x$H/$Hmm+0+0 $NAME
 		xrandr --setmonitor $NAME~2 ${w}/${wmm}x$H/$Hmm+$w+0 none
 		xrandr --setmonitor $NAME~3 ${w}/${wmm}x$H/$Hmm+$((w+w))+0 none
+		xrandr --fb ${W}x${H}
+	;;
+	stream)
+		log "Setting up stream crazy monitors for $NAME(${W}x${H})"
+		delete_all_fake_monitors
+		SCHEM=(
+			"1600/371x1440/340+0+0 ${NAME}"
+			"1920/445x1080/255+1600+0 none"
+			"1920/445x360/85+1600+1080 none"
+			"1600/371x1440/340+3520+0 none"
+		)
+		for i in ${!SCHEM[@]} ; do
+			xrandr --setmonitor ${NAME}~${i} ${SCHEM[$i]}
+		done
 		xrandr --fb ${W}x${H}
 	;;
 	*) usage ; exit 1 ;;
