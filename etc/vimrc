@@ -65,12 +65,14 @@ set hlsearch            " always hilight search
 let mapleader = ','     " use , as leader key
 
 " Keep cursos always centered
-autocmd CursorMoved,CursorMovedI * call Center_cursor()
-function! Center_cursor()
-    let pos = getpos(".")
-    normal! zz
-    call setpos(".", pos)
-endfunction
+if !has('gui')
+    autocmd CursorMoved,CursorMovedI * call Center_cursor()
+    function! Center_cursor()
+        let pos = getpos(".")
+        normal! zz
+        call setpos(".", pos)
+    endfunction
+endif
 
 " Do vim motion or do not, there is no mouse
 set mouse=""
