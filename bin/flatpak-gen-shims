@@ -1,39 +1,149 @@
-#!/usr/bin/bash
+#!/usr/bin/env bash
 
-export PROGRAM="$(basename $0)"
+export PROGRAM="$(basename "$0")"
 
-# log: shows porgram message logs
+# Determine the directory of the script
+SCRIPT_DIR="$(dirname "$(readlink -f "$0")")"
+# Set the config directory relative to the script directory
+CONFIG_DIR="$(readlink -f "$SCRIPT_DIR/../etc")"
+CONFIG_FILE="$CONFIG_DIR/flatpak-shim-config"
+
+# Declare the associative array globally
+declare -A custom_commands
+
+# log: shows program message logs
 log() {
-	echo "[flatpak-gen-shims] $@"
+    echo "[flatpak-gen-shims] $@"
+}
+
+# ensure_config_file: ensures the configuration file and its directory exist
+ensure_config_file() {
+    if [ ! -f "$CONFIG_FILE" ]; then
+        log "No config file found. Creating $CONFIG_FILE"
+        mkdir -p "$CONFIG_DIR"  # Ensure the directory exists
+        touch "$CONFIG_FILE"
+        if [ $? -ne 0 ]; then
+            log "Error creating config file or directory."
+            exit 1
+        fi
+    fi
 }
 
 # create_shim: creates a small launcher script with the command name from the Flatpak
 create_shim() {
-	appid="$1"
-	cmd="$2"
-	shim="$HOME/.flatpak/bin/$cmd"
-
-	cat > $shim <<EOF
+    appid="$1"
+    cmd="$2"
+    shim="$HOME/.flatpak/bin/$cmd"
+    
+    cat > "$shim" <<EOF
 #!/usr/bin/env sh
-# Flapak shim created by $PROGRAM
+# Flatpak shim created by $PROGRAM
 exec flatpak run $appid "\$@"
 EOF
-	chmod +x $shim
+    chmod +x "$shim"
 }
 
-#
-# Main
-#
+# load_config: reads custom command mappings from the config file
+load_config() {
+    if [ -f "$CONFIG_FILE" ]; then
+        while IFS= read -r line; do
+            # Skip empty lines and comments
+            [[ "$line" =~ ^#.*$ || -z "$line" ]] && continue
+            # Split the line into appid and custom command
+            appid=$(echo "$line" | awk '{print $1}')
+            custom_cmd=$(echo "$line" | awk '{print $2}')
+            # Update global associative array
+            custom_commands["$appid"]="$custom_cmd"
+        done < "$CONFIG_FILE"
+        log "Loaded mappings from config file:"
+        for key in "${!custom_commands[@]}"; do
+            log "  $key => ${custom_commands[$key]}"
+        done
+    else
+        log "Configuration file does not exist: $CONFIG_FILE"
+    fi
+}
 
-log "Removing old shims from ~/.flatpak/bin "
+# add_mapping: adds a new appid-command pair to the config file
+add_mapping() {
+    appid="$1"
+    custom_cmd="$2"
+    if grep -q "^$appid " "$CONFIG_FILE"; then
+        log "Mapping for $appid already exists. Updating..."
+        sed -i "s|^$appid .*|$appid $custom_cmd|" "$CONFIG_FILE"
+    else
+        log "Adding new mapping: $appid => $custom_cmd"
+        echo "$appid $custom_cmd" >> "$CONFIG_FILE"
+    fi
+}
+
+# show_help: displays the help message
+show_help() {
+    cat << EOF
+Usage: $PROGRAM [OPTIONS]
+
+Options:
+  --add <Application ID> <Custom Command>  Add or update a custom command mapping in the config file.
+  --help, -h                             Display this help message and exit.
+
+Examples:
+  $PROGRAM --add com.discordapp.Discord discord
+    This adds or updates the mapping for the application ID 'com.discordapp.Discord' to use the custom command 'discord'.
+
+  $PROGRAM
+    This will remove old shims, create new shims for all installed Flatpak apps, and use any custom commands defined in the config file.
+
+The configuration file is located at $CONFIG_FILE.
+EOF
+}
+
+# Main script
+
+# Ensure the config file exists as the very first thing
+ensure_config_file
+
+case "$1" in
+    --add)
+        if [ -z "$2" ] || [ -z "$3" ]; then
+            log "Usage: $PROGRAM --add <Application ID> <Custom Command>"
+            exit 1
+        fi
+        add_mapping "$2" "$3"
+        exit 0
+        ;;
+    --help | -h)
+        show_help
+        exit 0
+        ;;
+    *)
+        if [ $# -ne 0 ]; then
+            log "Unknown option: $1"
+            show_help
+            exit 1
+        fi
+        ;;
+esac
+
+log "Removing old shims from ~/.flatpak/bin"
 rm -rvf ~/.flatpak/bin/*
 
-log "Creating new shims at ~/.flatpak/bin for all installed apps ... "
+log "Creating new shims at ~/.flatpak/bin for all installed apps ..."
 mkdir -p ~/.flatpak/bin
+
+# Load the custom command mappings from the config file
+load_config
+
 flatpak list --app --columns=application | while read appid ; do
-	cmd="$(flatpak info -m $appid | awk -F= '/^command=/ {print $2}')"
-	cmd="$(basename $cmd)"
-	log "Creating shim for $appid => $cmd"
-	create_shim "$appid" "$cmd"
+    cmd="$(flatpak info -m "$appid" | awk -F= '/^command=/ {print $2}')"
+    cmd="$(basename "$cmd")"
+    
+    # Check if there's a custom command for this appid
+    if [ -n "${custom_commands[$appid]}" ]; then
+        log "Using custom command for $appid: ${custom_commands[$appid]}"
+        cmd="${custom_commands[$appid]}"
+    fi
+    
+    log "Creating shim for $appid => $cmd"
+    create_shim "$appid" "$cmd"
 done
 
