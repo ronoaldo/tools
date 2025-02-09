@@ -39,3 +39,7 @@ list-all-instances =
             aws list-regions | xargs -IREG aws ec2 list-instances --region REG | grep -v ^INSTANCE_ID
         ) | column -t
     }; f
+
+[command lambda]
+# lists all functions
+list = !aws tab "lambda list-functions" "Functions[]" "FunctionName,Runtime,Version,LastModified"
