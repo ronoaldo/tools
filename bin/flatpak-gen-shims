@@ -4,8 +4,8 @@ export PROGRAM="$(basename "$0")"
 
 # Determine the directory of the script
 SCRIPT_DIR="$(dirname "$(readlink -f "$0")")"
-# Set the config directory relative to the script directory
-CONFIG_DIR="$(readlink -f "$SCRIPT_DIR/../etc")"
+# Set the config directory based on XDG_CONFIG_HOME
+CONFIG_DIR="${XDG_CONFIG_HOME:-$(readlink -f $HOME/.config)}"
 CONFIG_FILE="$CONFIG_DIR/flatpak-shim-config"
 
 # Declare the associative array globally
