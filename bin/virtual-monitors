@@ -17,7 +17,8 @@ MONITORS="$1"
 shift
 CMD="$@"
 # From https://www.reddit.com/r/linux_gaming/comments/h8x4js/comment/k2bt218/?utm_source=share&utm_medium=web3x&utm_name=web3xcss&utm_term=1&utm_content=share_button
-RUN="vglrun -d ${DISPLAY}"
+# Disabled vglrun until we figure out some odd bugs in Plasma.
+#RUN="vglrun -d ${DISPLAY}"
 echo "Launching with ${RUN}"
 export RUN
 
