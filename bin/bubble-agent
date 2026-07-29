@@ -1,0 +1,415 @@
+#!/bin/bash
+#
+# bubble-agent - executa agentes de IA dentro de um sandbox bubblewrap.
+#
+# O host inteiro e montado somente-leitura (para o agente enxergar todas as
+# ferramentas ja instaladas sem poder danifica-las) e apenas o diretorio
+# corrente, mais os diretorios de estado do proprio agente, ficam com escrita.
+#
+# Os perfis abaixo declaram apenas o ESTADO de cada agente (caminhos que ele
+# mesmo define). O local de INSTALACAO nunca e fixado: e descoberto a partir do
+# executavel resolvido no PATH, seguindo symlinks, shebangs e os caminhos
+# citados por wrappers em shell.
+#
+# Uso:
+#   bubble-agent <agente> [args...]
+#
+# Opcionalmente, um link simbolico chamado bubble-<agente> dispensa o primeiro
+# argumento: "ln -s bubble-agent ~/bin/bubble-claude" faz "bubble-claude ..."
+# equivaler a "bubble-agent claude ...".
+#
+# Variaveis de ambiente:
+#   BUBBLE_RW       caminhos extras com escrita, separados por ':'
+#   BUBBLE_RO       caminhos extras somente-leitura, separados por ':'
+#   BUBBLE_BIN      executavel do agente, quando nao estiver no PATH
+#   BUBBLE_HOME_RO  se definido, monta todo o $HOME somente-leitura, expondo
+#                   as configuracoes de ferramentas do host (npm, go, cargo...).
+#                   Por padrao o $HOME e um tmpfs efemero: o que o agente
+#                   escrever fora dos caminhos com bind e descartado ao sair.
+#   BUBBLE_DEBUG    se definido, imprime a linha de comando do bwrap
+#   BUBBLE_DRYRUN   se definido, imprime a linha de comando e sai sem executar
+#
+set -euo pipefail
+
+die() {
+	echo "bubble-agent: $*" >&2
+	exit 1
+}
+
+# Descobre o agente: pelo 1o argumento ou, se houver um link simbolico
+# bubble-<agente> apontando para ca, pelo nome da invocacao.
+AGENT="$(basename "$0")"
+case "$AGENT" in
+bubble-agent | bubble-agent.sh | bash | sh)
+	[ $# -ge 1 ] || die "informe o agente. Uso: bubble-agent <agente> [args...]"
+	AGENT="$1"
+	shift
+	;;
+bubble-*)
+	AGENT="${AGENT#bubble-}"
+	;;
+esac
+
+# Garante que um diretorio exista no host antes de ser montado no sandbox.
+ensure_dir() {
+	[ -e "$1" ] || mkdir -p "$1"
+}
+
+# Garante que um arquivo exista no host antes de ser montado no sandbox.
+ensure_file() {
+	[ -e "$1" ] || {
+		ensure_dir "$(dirname "$1")"
+		touch "$1"
+	}
+}
+
+# ---------------------------------------------------------------------------
+# Descoberta da instalacao
+# ---------------------------------------------------------------------------
+
+# Um diretorio que esta no PATH do host hospeda, por definicao, executaveis de
+# varios programas: montar o diretorio inteiro exporia aplicacoes sem relacao
+# com o agente, entao nesse caso so o proprio arquivo e montado. A lista sai do
+# PATH real do usuario, sem supor convencoes de instalacao.
+is_shared_bindir() {
+	local dir
+	while IFS= read -r dir; do
+		if [ -n "$dir" ] && [ "$1" = "${dir%/}" ]; then
+			return 0
+		fi
+	done < <(printf '%s\n' "${PATH//:/$'\n'}" /bin /sbin /usr/bin /usr/sbin /usr/local/bin /usr/local/sbin)
+	return 1
+}
+
+# Uma instalacao autocontida tem, ao lado do bin/, as pastas de suporte do
+# programa. E o que distingue ~/apps/node-v22/bin (raiz = node-v22) de um
+# ~/bin qualquer, que so junta executaveis soltos.
+is_selfcontained() {
+	local dir
+	for dir in lib lib64 libexec share resources include; do
+		if [ -d "$1/$dir" ]; then
+			return 0
+		fi
+	done
+	return 1
+}
+
+# Deduz a raiz da instalacao a partir de um executavel, subindo os niveis que
+# sao apenas estrutura interna (bin/, bundle/, versions/, node_modules/...).
+# Imprime vazio quando o executavel vive num diretorio compartilhado.
+install_root() {
+	local dir parent
+	dir="$(dirname "$1")"
+
+	# Dentro de node_modules a raiz util e o dono do node_modules mais externo.
+	case "$dir" in
+	*/node_modules/*) dir="${dir%%/node_modules/*}" ;;
+	*/node_modules) dir="${dir%/node_modules}" ;;
+	esac
+
+	case "$(basename "$dir")" in
+	bin | sbin | bundle | versions | current | libexec)
+		parent="$(dirname "$dir")"
+		if is_selfcontained "$parent"; then
+			dir="$parent"
+		elif is_shared_bindir "$dir"; then
+			return 0
+		else
+			dir="$parent"
+		fi
+		;;
+	*)
+		if is_shared_bindir "$dir"; then
+			return 0
+		fi
+		;;
+	esac
+
+	# Nunca devolve algo generico demais a ponto de expor o home inteiro.
+	case "$dir" in
+	"$HOME" | "$HOME/.local" | "$HOME/.local/share" | "$HOME/.config" | "$HOME/.cache" | / | /usr | /usr/local | /opt | /var) return 0 ;;
+	esac
+
+	echo "$dir"
+}
+
+# Caminhos somente-leitura derivados dos executaveis descobertos.
+PROGRAM_PATHS=()
+# Diretorios acrescentados ao PATH do sandbox (interpretadores, por exemplo).
+PROGRAM_BINDIRS=()
+
+# Registra um executavel e tudo que ele precisa para rodar: o alvo real do
+# symlink, a pasta da aplicacao, o interpretador do shebang e os caminhos
+# absolutos citados quando se trata de um wrapper em shell.
+add_program() {
+	local bin="$1" depth="${2:-0}"
+	local real root shebang interp token text
+
+	[ -n "$bin" ] && [ -e "$bin" ] || return 0
+	[ "$depth" -le 3 ] || return 0
+
+	real="$(readlink -f "$bin")"
+	PROGRAM_PATHS+=("$bin")
+	[ "$real" = "$bin" ] || PROGRAM_PATHS+=("$real")
+
+	root="$(install_root "$real")"
+	if [ -n "$root" ]; then
+		PROGRAM_PATHS+=("$root")
+	fi
+
+	# Somente scripts de texto sao inspecionados adiante.
+	[ "$(head -c 2 "$real" 2>/dev/null)" = '#!' ] || return 0
+	PROGRAM_BINDIRS+=("$(dirname "$real")")
+
+	IFS= read -r shebang <"$real" || return 0
+	shebang="${shebang#\#!}"
+	# shellcheck disable=SC2086
+	set -- $shebang
+	interp="${1:-}"
+	# "#!/usr/bin/env node" -> o interpretador real e o proximo argumento.
+	case "$interp" in
+	*/env) interp="$(command -v "${2:-}" 2>/dev/null || true)" ;;
+	esac
+	if [ -n "$interp" ]; then
+		add_program "$interp" $((depth + 1))
+	fi
+
+	# Caminhos absolutos citados pelo wrapper (ex.: exec ~/apps/foo/bin.js).
+	text="$(tr -d '\\' <"$real" | sed "s#\\\$HOME/#$HOME/#g; s#~/#$HOME/#g")"
+	while IFS= read -r token; do
+		[ -e "$token" ] || continue
+		[ "$token" = "$real" ] && continue
+		add_program "$token" $((depth + 1))
+	done < <(grep -oE '/[A-Za-z0-9_@.+-][A-Za-z0-9_@./+-]*' <<<"$text" | sort -u)
+}
+
+# Alvos de symlinks que apontam para fora dos diretorios montados. Cobre casos
+# como ~/.gemini/GEMINI.md -> ~/.agents/AGENTS.md, cujo alvo ficaria quebrado
+# dentro do sandbox.
+escaping_symlinks() {
+	local base link target
+	for base in "$@"; do
+		[ -d "$base" ] || continue
+		while IFS= read -r link; do
+			target="$(readlink -f "$link" 2>/dev/null)" || continue
+			[ -e "$target" ] || continue
+			case "$target" in
+			"$base"/*) continue ;;
+			esac
+			echo "$target"
+		done < <(find "$base" -maxdepth 2 -type l 2>/dev/null)
+	done
+}
+
+# ---------------------------------------------------------------------------
+# Perfis dos agentes: apenas estado, nunca local de instalacao
+# ---------------------------------------------------------------------------
+
+# Caminhos de estado com permissao de escrita, especificos do agente.
+RW_PATHS=()
+# Caminhos adicionais somente-leitura definidos pelo proprio agente.
+RO_PATHS=()
+# Argumentos injetados antes dos argumentos do usuario.
+AGENT_ARGS=()
+# Variaveis exportadas para dentro do sandbox, no formato NOME=valor.
+AGENT_ENV=()
+
+# Nome do executavel procurado no PATH, quando difere do nome do agente.
+BIN_NAME="$AGENT"
+
+case "$AGENT" in
+claude)
+	RW_PATHS+=("$HOME/.claude" "$HOME/.claude.json")
+	AGENT_ARGS+=(--permission-mode=auto --allow-dangerously-skip-permissions --dangerously-skip-permissions)
+	;;
+
+agy | antigravity-cli)
+	# O CLI do Antigravity guarda todo o estado em ~/.gemini/antigravity-cli
+	# (conversas em sqlite, knowledge, brain, logs) e compartilha as
+	# credenciais OAuth com o gemini-cli em ~/.gemini. Ele nao usa
+	# ~/.antigravity nem ~/.config/Antigravity, que sao da IDE.
+	BIN_NAME="agy"
+	RW_PATHS+=("$HOME/.gemini")
+	# O agy e um binario Go, mas embute o playwright-go, cujo driver e em
+	# Node e fica neste cache. Necessario apenas para as ferramentas de
+	# navegador: sem ele o CLI funciona normalmente, so perde o browser.
+	RO_PATHS+=("$HOME/.cache/ms-playwright-go")
+	;;
+
+antigravity)
+	# Perfil da IDE (Electron), separado do CLI acima. Se o executavel nao
+	# estiver no PATH, aponte com BUBBLE_BIN.
+	RW_PATHS+=(
+		"$HOME/.antigravity"
+		"$HOME/.config/Antigravity"
+		"$HOME/.cache/antigravity"
+	)
+	;;
+
+pi | pi-coding-agent)
+	# Instalacao npm global (@earendil-works/pi-coding-agent): o executavel e
+	# um symlink para dist/cli.js e a descoberta chega ao Node pelo shebang.
+	# Todo o estado fica em ~/.pi/agent (auth.json, settings.json, sessions
+	# por diretorio, models.json e as extensoes em bin/ e npm/).
+	BIN_NAME="pi"
+	RW_PATHS+=("$HOME/.pi")
+	;;
+
+opencode)
+	# Espalha o estado pelos diretorios XDG: config e plugins em ~/.config,
+	# credenciais e banco sqlite em ~/.local/share, ~/.local/state e o
+	# catalogo de modelos em ~/.cache.
+	RW_PATHS+=(
+		"$HOME/.config/opencode"
+		"$HOME/.local/share/opencode"
+		"$HOME/.local/state/opencode"
+		"$HOME/.cache/opencode"
+	)
+	# Diretorio da instalacao: o binario mora em bin/, que esta no PATH, mas
+	# o programa tambem procura package.json e plugins na raiz.
+	RO_PATHS+=("$HOME/.opencode")
+	;;
+
+ze)
+	ZE_HOME="${ZE_HOME:-$HOME/.config/ze}"
+	RW_PATHS+=("$ZE_HOME")
+	AGENT_ENV+=("ZE_HOME=$ZE_HOME")
+	;;
+
+gemini)
+	RW_PATHS+=("$HOME/.gemini")
+	;;
+
+*)
+	# Perfil generico: sem estado conhecido, apenas ~/.config/<agente>.
+	RW_PATHS+=("$HOME/.config/$AGENT")
+	;;
+esac
+
+BIN="${BUBBLE_BIN:-$(command -v "$BIN_NAME" 2>/dev/null || true)}"
+[ -n "$BIN" ] || die "'$BIN_NAME' nao encontrado no PATH; aponte o executavel com BUBBLE_BIN"
+[ -x "$BIN" ] || die "'$BIN' nao e executavel"
+
+add_program "$BIN"
+RO_PATHS+=("${PROGRAM_PATHS[@]}")
+
+# Cache do Hugging Face compartilhado com o host (somente leitura).
+HF_HOME="${HF_HOME:-$HOME/.cache/huggingface}"
+ensure_dir "$HF_HOME"
+RO_PATHS+=("$HF_HOME" "$HOME/.gitconfig" "$HOME/.ssh" "$HOME/.gnupg")
+
+# Caminhos extras informados pelo usuario.
+IFS=':' read -r -a EXTRA_RW <<<"${BUBBLE_RW:-}"
+IFS=':' read -r -a EXTRA_RO <<<"${BUBBLE_RO:-}"
+for path in "${EXTRA_RW[@]}"; do
+	if [ -n "$path" ]; then RW_PATHS+=("$path"); fi
+done
+for path in "${EXTRA_RO[@]}"; do
+	if [ -n "$path" ]; then RO_PATHS+=("$path"); fi
+done
+
+CURRENT_DIR="$(pwd)"
+
+# Verdadeiro quando o caminho ja esta montado com permissao de escrita.
+is_rw_path() {
+	local rw
+	for rw in "${RW_PATHS[@]}" "$CURRENT_DIR"; do
+		if [ "$1" = "$rw" ]; then
+			return 0
+		fi
+	done
+	return 1
+}
+
+# Monta os argumentos de bind. Caminhos de escrita sao criados quando faltam;
+# os somente-leitura usam a variante *-try para tolerar ausencias.
+BINDS=()
+# Opcional: todo o $HOME somente-leitura, sob os binds de escrita seguintes.
+if [ -n "${BUBBLE_HOME_RO:-}" ]; then
+	BINDS+=(--ro-bind "$HOME" "$HOME")
+fi
+for path in "${RW_PATHS[@]}"; do
+	case "$path" in
+	*.json | *.toml | *.yaml | *.yml | *.conf) ensure_file "$path" ;;
+	*) ensure_dir "$path" ;;
+	esac
+	BINDS+=(--bind "$path" "$path")
+done
+# Symlinks que escapam dos caminhos de estado precisam do alvo montado.
+while IFS= read -r path; do
+	if [ -n "$path" ]; then RO_PATHS+=("$path"); fi
+done < <(escaping_symlinks "${RW_PATHS[@]}")
+
+# Deduplica preservando nomes com espaco.
+mapfile -t RO_PATHS < <(printf '%s\n' "${RO_PATHS[@]}" | sort -u)
+for path in "${RO_PATHS[@]}"; do
+	# Um bind somente-leitura aplicado depois venceria o de escrita e deixaria
+	# o estado do agente mudo, sem nenhum erro visivel. O de escrita ganha.
+	if is_rw_path "$path"; then
+		continue
+	fi
+	BINDS+=(--ro-bind-try "$path" "$path")
+done
+
+# O PATH do sandbox herda o do host (a configuracao real do usuario, sem
+# suposicoes) e recebe na frente os diretorios dos executaveis descobertos.
+# Entradas nao montadas simplesmente nao resolvem la dentro.
+#
+# Componentes vazios sao descartados: no PATH eles significam "diretorio
+# corrente", o que dentro do sandbox e justamente a arvore com escrita que o
+# agente controla. Duplicatas tambem saem, preservando a ordem.
+mapfile -t HOST_PATH_DIRS < <(printf '%s\n' "${PATH//:/$'\n'}")
+SANDBOX_PATH=""
+for path in "${PROGRAM_BINDIRS[@]}" "$(dirname "$BIN")" "${HOST_PATH_DIRS[@]}"; do
+	[ -n "$path" ] || continue
+	case ":$SANDBOX_PATH:" in
+	*":$path:"*) continue ;;
+	esac
+	SANDBOX_PATH="${SANDBOX_PATH:+$SANDBOX_PATH:}$path"
+done
+SANDBOX_PATH="${SANDBOX_PATH:-/usr/local/bin:/usr/bin:/bin}"
+
+ENVS=(
+	--setenv HOME "$HOME"
+	--setenv PATH "$SANDBOX_PATH"
+	--setenv HF_HOME "$HF_HOME"
+	--setenv BUBBLE_AGENT "$AGENT"
+)
+for env in "${AGENT_ENV[@]}"; do
+	if [ -n "$env" ]; then ENVS+=(--setenv "${env%%=*}" "${env#*=}"); fi
+done
+
+CMD=(
+	bwrap
+	--share-net
+	--ro-bind /usr /usr
+	--ro-bind /bin /bin
+	--ro-bind /lib /lib
+	--ro-bind-try /lib64 /lib64
+	--ro-bind /etc /etc
+	--ro-bind /sys /sys
+	--proc /proc
+	--dev /dev
+	--dev-bind-try /dev/dri /dev/dri
+	--tmpfs /tmp
+	--bind /run /run
+	--dir "$CURRENT_DIR"
+	--bind "$CURRENT_DIR" "$CURRENT_DIR"
+	"${BINDS[@]}"
+	"${ENVS[@]}"
+	--chdir "$CURRENT_DIR"
+	"$BIN"
+	"${AGENT_ARGS[@]}"
+	"$@"
+)
+
+if [ -n "${BUBBLE_DEBUG:-}" ] || [ -n "${BUBBLE_DRYRUN:-}" ]; then
+	printf '%q ' "${CMD[@]}" >&2
+	echo >&2
+fi
+
+if [ -n "${BUBBLE_DRYRUN:-}" ]; then
+	exit 0
+fi
+
+exec "${CMD[@]}"
