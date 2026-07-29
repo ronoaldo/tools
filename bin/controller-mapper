@@ -1,0 +1,72 @@
+#!/usr/bin/env python
+
+try:
+	import evdev
+	from evdev import ecodes, list_devices, InputDevice
+except ImportError:
+	print("Erro ao inniciar: evdev não instalado. Corrija com 'sudo apt install python3-evdev")
+	sys.exit(1)
+
+import time
+
+# Configurações de mapeamento: Nome do Dispositivo -> Código do Botão
+# Xbox: 167 (KEY_RECORD / Share)
+# DualSense:  (KEY_FAVORITES / Create)
+SUPPORTED_CONTROLLERS = {
+    "Microsoft Xbox Series S|X Controller": 167,
+    "DualSense Wireless Controller": 314,
+    "Sony Interactive Entertainment Wireless Controller": 314,
+    "Sony Interactive Entertainment DualSense Wireless Controller": 314
+}
+
+VIRTUAL_KEYBOARD_NAME = "Controller Mapper Virtual Keys"
+
+def find_controller():
+    """Busca um controle compatível nos dispositivos conectados."""
+    for path in list_devices():
+        try:
+            dev = InputDevice(path)
+            if dev.name in SUPPORTED_CONTROLLERS:
+                return dev, SUPPORTED_CONTROLLERS[dev.name]
+        except Exception:
+            continue
+    return None, None
+
+def run_mapper():
+    """Loop principal que gerencia conexão e eventos."""
+    print(f"Iniciando serviço de mapeamento...")
+    
+    # Cria o teclado virtual (persiste enquanto o script rodar)
+    ui = evdev.UInput(name=VIRTUAL_KEYBOARD_NAME)
+    
+    while True:
+        controller, share_code = find_controller()
+        
+        if not controller:
+            # Se não achar, espera 3 segundos e tenta de novo
+            time.sleep(3)
+            continue
+            
+        print(f"Conectado a: {controller.name} ({controller.path})")
+        
+        try:
+            # Itera sobre os eventos do controle
+            for event in controller.read_loop():
+                if event.type == ecodes.EV_KEY:
+                    if event.code == share_code:
+                        # Replica o estado (1=pressionado, 0=solto) para o F12
+                        ui.write(ecodes.EV_KEY, ecodes.KEY_F12, event.value)
+                        ui.syn()
+        except (OSError, FileNotFoundError):
+            print(f"Controle {controller.name} desconectado. Aguardando reconexão...")
+            continue
+        except Exception as e:
+            print(f"Erro inesperado: {e}")
+            time.sleep(1)
+
+if __name__ == "__main__":
+    try:
+        run_mapper()
+    except KeyboardInterrupt:
+        print("\nServiço encerrado pelo usuário.")
+
