@@ -37,40 +37,34 @@ add_path_support() {
 	fi
 }
 
-# Test if $1 contains $2
-contains() {
-	case "$1" in
-		*${2}*)
-			return 0
-		;;
-	esac
-	return 1
-}
-
 reload_path() {
 	touch $HOME/.path
 
-	# Create a temporary list of paths
-	cat /dev/null > /tmp/$$.path
-	cat $HOME/.path | grep -v ^$ >> /tmp/$$.path
-	display_path    | grep -v ^$ >> /tmp/$$.path
-	
-	#debug "/tmp/$$.path= [ $( cat /tmp/$$.path ) ]"
-
 	path=
+	# Entradas de ~/.path primeiro, depois as que já estavam no PATH. As
+	# linhas vazias são descartadas: no PATH elas significam o diretório
+	# corrente, colocando "." na busca por executáveis.
 	while read p ; do
-		if contains "$path" ":$p" ; then
-			debug "$p já esta em $path"
-		else
-			debug "Adicionando $p não está em $path"
-			path="$path:$p"
-		fi
-	done < /tmp/$$.path
+		[ -n "$p" ] || continue
+		# A comparação delimita os dois lados com ':' para casar o
+		# componente inteiro. Sem isso, /usr/bin seria considerado
+		# presente por causa de um /usr/bin/foo já na lista, e acabaria
+		# descartado.
+		case ":$path:" in
+			*":$p:"*)
+				debug "$p já esta em $path"
+				continue
+			;;
+		esac
+		debug "Adicionando $p não está em $path"
+		# O separador só entra quando já há conteúdo, senão o PATH
+		# nasceria com ':' na frente, ou seja, uma entrada vazia.
+		path="${path:+$path:}$p"
+	done < <(cat $HOME/.path ; display_path)
 
 	debug "New computed path: $path"
 
 	export PATH="${path}"
-	rm /tmp/$$.path
 }
 
 usage() {
