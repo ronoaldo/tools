@@ -296,7 +296,7 @@ RO_PATHS+=("${PROGRAM_PATHS[@]}")
 # Cache do Hugging Face compartilhado com o host (somente leitura).
 HF_HOME="${HF_HOME:-$HOME/.cache/huggingface}"
 ensure_dir "$HF_HOME"
-RO_PATHS+=("$HF_HOME" "$HOME/.gitconfig" "$HOME/.ssh" "$HOME/.gnupg")
+RO_PATHS+=("$HF_HOME" "$HOME/.gitconfig" "$HOME/.git-hooks" "$HOME/.ssh" "$HOME/.gnupg" "$HOME/.agents")
 
 # Caminhos extras informados pelo usuario.
 IFS=':' read -r -a EXTRA_RW <<<"${BUBBLE_RW:-}"
